@@ -10,21 +10,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
+import io.github.fletchmckee.liquid.LiquidState
+import io.github.fletchmckee.liquid.liquefiable
 import kotlinx.serialization.Serializable
 
 /**
  * 课表页导航入口。
  */
 fun EntryProviderScope<NavKey>.timetableEntry(
-    hazeState: HazeState,
+    liquidState: LiquidState,
     floatingToolbarExpanded: Boolean,
     onToolbarExpandedChange: (Boolean) -> Unit,
 ) {
     entry<TimetableRoute> {
         TimetableScreen(
-            hazeState = hazeState,
+            liquidState = liquidState,
             toolbarExpanded = floatingToolbarExpanded,
             onToolbarExpandedChange = onToolbarExpandedChange,
         )
@@ -35,12 +35,12 @@ fun EntryProviderScope<NavKey>.timetableEntry(
  * 课表页路由。
  */
 @Serializable
-data object TimetableRoute: NavKey
+data object TimetableRoute : NavKey
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TimetableScreen(
-    hazeState: HazeState,
+    liquidState: LiquidState,
     toolbarExpanded: Boolean,
     onToolbarExpandedChange: (Boolean) -> Unit,
 ) {
@@ -53,7 +53,8 @@ private fun TimetableScreen(
                     onExpand = { onToolbarExpandedChange(true) },
                     onCollapse = { onToolbarExpandedChange(false) },
                 )
-                .hazeSource(state = hazeState),
+//                .hazeSource(state = hazeState)
+                .liquefiable(liquidState),
             contentPadding = innerPadding,
         ) {
             items(100, key = { it }) {

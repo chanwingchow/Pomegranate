@@ -42,10 +42,8 @@ import com.chow.pomegranate.ui.screen.main.modules.ModulesRoute
 import com.chow.pomegranate.ui.screen.main.modules.modulesEntry
 import com.chow.pomegranate.ui.screen.main.timetable.TimetableRoute
 import com.chow.pomegranate.ui.screen.main.timetable.timetableEntry
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.materials.HazeMaterials
-import dev.chrisbanes.haze.rememberHazeState
+import io.github.fletchmckee.liquid.liquid
+import io.github.fletchmckee.liquid.rememberLiquidState
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -80,7 +78,7 @@ private val config = SavedStateConfiguration {
 /**
  * 主页。
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalHazeMaterialsApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MainScreen() {
     // 悬浮工具栏展开状态
@@ -92,8 +90,9 @@ private fun MainScreen() {
         TimetableRoute,
     )
 
-    // 高斯模糊效果
-    val hazeState = rememberHazeState()
+    // 液态玻璃效果
+    val liquidState = rememberLiquidState()
+    val liquidTint = MaterialTheme.colorScheme.surface.copy(0.5f)
 
     Scaffold(
         contentWindowInsets = WindowInsets.captionBar,
@@ -111,12 +110,9 @@ private fun MainScreen() {
                     .offset(y = -FloatingToolbarDefaults.ScreenOffset)
                     .zIndex(1f)
                     .clip(CircleShape)
-                    .hazeEffect(
-                        state = hazeState,
-                        style = HazeMaterials.ultraThin(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(0.9f),
-                        ),
-                    ),
+                    .liquid(liquidState) {
+                        tint = liquidTint
+                    },
             )
 
             // 导航
@@ -132,7 +128,7 @@ private fun MainScreen() {
                 entryProvider = entryProvider {
                     // 课表页
                     timetableEntry(
-                        hazeState = hazeState,
+                        liquidState = liquidState,
                         floatingToolbarExpanded = floatingToolbarExpanded,
                         onToolbarExpandedChange = { floatingToolbarExpanded = it },
                     )
