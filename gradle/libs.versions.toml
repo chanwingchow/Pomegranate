@@ -14,11 +14,13 @@ composeMultiplatform = "1.11.0-alpha04"
 junit = "4.13.2"
 kotlin = "2.3.20"
 kotlinx-coroutines = "1.10.2"
-material3 = "1.10.0-alpha05"
+material3 = "1.11.0-alpha04"
 
 # UI
-navigation3 = "1.1.0-alpha04"
+haze = "1.7.2"
+material-icons = "1.7.3"
 materialKolor = "5.0.0-alpha07"
+navigation3 = "1.1.0-alpha04"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -41,17 +43,23 @@ compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-previ
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 
 # UI
-# - Material Kolor
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-material = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "haze" }
+material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "material-icons" }
+material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "material-icons" }
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
-# - Navigation 3
 navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
-androidx-lifecycle-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
+lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
 
 [bundles]
 ui = [
+    "haze",
+    "haze-material",
+    "material-icons-core",
+    "material-icons-extended",
     "materialKolor",
     "navigation3-ui",
-    "androidx-lifecycle-navigation3",
+    "lifecycle-viewmodel-navigation3",
 ]
 
 [plugins]
@@ -61,3 +69,5 @@ composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "com
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
