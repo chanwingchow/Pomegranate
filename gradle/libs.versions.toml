@@ -17,6 +17,7 @@ kotlinx-coroutines = "1.10.2"
 material3 = "1.11.0-alpha04"
 
 # UI
+cloudy = "0.5.0"
 liquid = "1.1.1"
 material-icons = "1.7.3"
 materialKolor = "5.0.0-alpha07"
@@ -43,6 +44,7 @@ compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-previ
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 
 # UI
+cloudy = { module = "com.github.skydoves:cloudy", version.ref = "cloudy" }
 liquid = { module = "io.github.fletchmckee.liquid:liquid", version.ref = "liquid" }
 material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "material-icons" }
 material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "material-icons" }
@@ -52,6 +54,7 @@ lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:l
 
 [bundles]
 ui = [
+    "cloudy",
     "liquid",
     "material-icons-core",
     "material-icons-extended",

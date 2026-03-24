@@ -1,8 +1,11 @@
 package com.chow.pomegranate.ui.screen.main.me
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
 
 /**
@@ -25,4 +28,22 @@ data object MeRoute: NavKey
  */
 @Composable
 private fun MeScreen() {
+}
+
+@Preview
+@Composable
+private fun MeContentPreview() {
+    PomegranateExpressiveTheme {
+        MeContent()
+    }
+}
+
+/**
+ * 我的页内容。
+ */
+@Composable
+private fun MeContent(
+    modifier: Modifier = Modifier,
+) {
+
 }

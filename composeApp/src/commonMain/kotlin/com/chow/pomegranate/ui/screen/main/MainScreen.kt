@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.EntryProviderScope
@@ -42,6 +43,7 @@ import com.chow.pomegranate.ui.screen.main.modules.ModulesRoute
 import com.chow.pomegranate.ui.screen.main.modules.modulesEntry
 import com.chow.pomegranate.ui.screen.main.timetable.TimetableRoute
 import com.chow.pomegranate.ui.screen.main.timetable.timetableEntry
+import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import io.github.fletchmckee.liquid.liquid
 import io.github.fletchmckee.liquid.rememberLiquidState
 import kotlinx.serialization.Serializable
@@ -78,9 +80,27 @@ private val config = SavedStateConfiguration {
 /**
  * 主页。
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MainScreen() {
+    MainContent()
+}
+
+@Preview
+@Composable
+private fun MainContentPreview() {
+    PomegranateExpressiveTheme {
+        MainContent()
+    }
+}
+
+/**
+ * 首页内容。
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun MainContent(
+    modifier: Modifier = Modifier,
+) {
     // 悬浮工具栏展开状态
     var floatingToolbarExpanded by remember { mutableStateOf(true) }
 
@@ -95,6 +115,7 @@ private fun MainScreen() {
     val liquidTint = MaterialTheme.colorScheme.surface.copy(0.5f)
 
     Scaffold(
+        modifier = modifier,
         contentWindowInsets = WindowInsets.captionBar,
     ) { innerPadding ->
         Box(
