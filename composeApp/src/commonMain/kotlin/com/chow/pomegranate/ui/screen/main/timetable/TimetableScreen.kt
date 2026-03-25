@@ -205,9 +205,13 @@ private fun TimetableContent(
             }
 
             item(span = { GridItemSpan(maxLineSpan) }) {
+                val height = with(FloatingToolbarDefaults) {
+                    ContainerSize + ScreenOffset
+                }
+
                 // 空出悬浮工具栏高度
                 Spacer(
-                    Modifier.height(FloatingToolbarDefaults.ContainerSize),
+                    Modifier.height(height),
                 )
             }
         }

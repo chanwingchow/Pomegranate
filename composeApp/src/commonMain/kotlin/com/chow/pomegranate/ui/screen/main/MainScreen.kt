@@ -3,21 +3,26 @@ package com.chow.pomegranate.ui.screen.main
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.captionBar
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Face4
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconToggleButton
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingToolbarColors
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -37,6 +43,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.chow.pomegranate.ui.component.PomTooltipBox
 import com.chow.pomegranate.ui.screen.main.me.MeRoute
 import com.chow.pomegranate.ui.screen.main.me.meEntry
 import com.chow.pomegranate.ui.screen.main.modules.ModulesRoute
@@ -50,6 +57,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import pomegranate.composeapp.generated.resources.Res
+import pomegranate.composeapp.generated.resources.me
+import pomegranate.composeapp.generated.resources.modules
+import pomegranate.composeapp.generated.resources.timetable
 
 /**
  * 主页导航入口。
@@ -119,13 +132,19 @@ private fun MainContent(
         contentWindowInsets = WindowInsets.captionBar,
     ) { innerPadding ->
         Box(
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
         ) {
             // 悬浮工具栏，该组件需要比内容先获取焦点，所以放在此处，
             // 并添加 zIndex 保证在内容上方
             FloatingToolbar(
                 expanded = floatingToolbarExpanded,
                 onExpandedChange = { floatingToolbarExpanded = it },
+                currentRoute = backStack.last(),
+                onNavigate = {
+                    backStack[0] = it
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .offset(y = -FloatingToolbarDefaults.ScreenOffset)
@@ -134,6 +153,10 @@ private fun MainContent(
                     .liquid(liquidState) {
                         tint = liquidTint
                     },
+                colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
+                    // 应用液态玻璃，不用默认的容器颜色
+                    toolbarContainerColor = Color.Transparent,
+                ),
             )
 
             // 导航
@@ -164,54 +187,139 @@ private fun MainContent(
 }
 
 /**
+ * 主页部分。
+ *
+ * @param label 标签
+ * @param icon 图标
+ */
+enum class MainSection(
+    val label: StringResource,
+    val icon: ImageVector,
+) {
+    /**
+     * 模块。
+     */
+    Modules(
+        label = Res.string.modules,
+        icon = Icons.Rounded.ViewModule,
+    ),
+
+    /**
+     * 课表。
+     */
+    Timetable(
+        label = Res.string.timetable,
+        icon = Icons.Rounded.Schedule,
+    ),
+
+    /**
+     * 我。
+     */
+    Me(
+        label = Res.string.me,
+        icon = Icons.Rounded.Face4,
+    )
+}
+
+/**
  * 悬浮工具栏。
+ *
+ * @param expanded 首位内容是否展开
+ * @param onExpandedChange 首位内容展开状态变化
+ * @param currentRoute 当前路由
+ * @param onNavigate 导航事件
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FloatingToolbar(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    currentRoute: NavKey,
+    onNavigate: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
+    colors: FloatingToolbarColors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
 ) {
     HorizontalFloatingToolbar(
         expanded = expanded,
         modifier = modifier,
-        colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
-            toolbarContainerColor = Color.Transparent,
-        ),
+        colors = colors,
         leadingContent = {
-            FilledTonalButton(
-                onClick = {},
-            ) {
-                Icon(
-                    Icons.Rounded.ViewModule,
-                    contentDescription = null,
-                )
-            }
+            // 模块
+            val section = MainSection.Modules
+
+            NavToggleButton(
+                checked = currentRoute is ModulesRoute,
+                onCheckedChange = {
+                    onNavigate(ModulesRoute)
+                },
+                label = stringResource(section.label),
+                icon = section.icon,
+            )
         },
         trailingContent = {
-            FilledTonalButton(
-                onClick = {},
-            ) {
-                Icon(
-                    Icons.Rounded.Face4,
-                    contentDescription = null,
-                )
-            }
+            // 我
+            val section = MainSection.Me
+
+            NavToggleButton(
+                checked = currentRoute is MeRoute,
+                onCheckedChange = {
+                    onNavigate(MeRoute)
+                },
+                label = stringResource(section.label),
+                icon = section.icon,
+            )
         },
     ) {
-        FilledIconToggleButton(
-            checked = true,
-            onCheckedChange = {
-                // 切换选中状态
+        // 课表
+        val section = MainSection.Timetable
 
-                // 点击打开悬浮工具栏
-                onExpandedChange(true)
+        NavToggleButton(
+            checked = currentRoute is TimetableRoute,
+            onCheckedChange = {
+                if (expanded) {
+                    onNavigate(TimetableRoute)
+                } else {
+                    // 点击打开悬浮工具栏
+                    onExpandedChange(true)
+                }
             },
+            label = stringResource(section.label),
+            icon = section.icon,
+        )
+    }
+}
+
+/**
+ * 导航切换按钮。
+ */
+@Composable
+private fun NavToggleButton(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    label: String,
+    icon: ImageVector,
+) {
+    PomTooltipBox(
+        tooltip = {
+            // 工具提示
+            PlainTooltip {
+                Text(label)
+            }
+        },
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+            // 在上方弹出
+            positioning = TooltipAnchorPosition.Above,
+        ),
+    ) {
+        // 填充图标切换按钮
+        FilledIconToggleButton(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
         ) {
+            // 图标
             Icon(
-                Icons.Rounded.CalendarMonth,
-                contentDescription = null,
+                icon,
+                contentDescription = label,
             )
         }
     }
