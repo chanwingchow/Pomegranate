@@ -1,48 +1,44 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Desktop (JVM).
+# 广财小石榴（跨平台 Material Expressive）
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+> 我的时间非常有限，本来打算 4 月份完成开发，却迟迟没有开始。
+> 新版小石榴的到来还需要一些时间，不会太快。
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+如有任何建议，欢迎提交 issue 或投邮箱。
 
-### Build and Run Android Application
+## TODO
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+### 重写 UI（进行中）
 
-### Build and Run Desktop (JVM) Application
+- [x] 课表页（初步草稿）
+- [x] 模块页（初步草稿）
+- [ ] 我的页
+- [ ] 登录页
+- [ ] 设置页
+- [ ] 关于页
+- [ ] OTP 页
+- [ ] 紧急电话页
+- [ ] 教学通知页
+- [ ] 常用网站页
+- [ ] 选课系统页
+- [ ] 考试安排页
+- [ ] 四六级页
+- [ ] 课程成绩页
+- [ ] 第二课堂页
+- [ ] 教师信息页
+- [ ] 全校课表页
+- [ ] 执行计划页
+- [ ] 学业进度页
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+...
 
-### Build and Run iOS Application
+### 重写功能接口（计划）
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+- [ ] 教务系统
+- [ ] 第二课堂
+- [ ] 教学通知
+- [ ] Bing 壁纸
+- [ ] WebVPN
 
----
+### 其他功能
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+待确定
