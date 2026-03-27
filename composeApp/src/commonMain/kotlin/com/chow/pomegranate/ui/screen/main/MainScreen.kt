@@ -7,10 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Face4
-import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FloatingToolbarColors
@@ -51,18 +47,14 @@ import com.chow.pomegranate.ui.screen.main.modules.modulesEntry
 import com.chow.pomegranate.ui.screen.main.timetable.TimetableRoute
 import com.chow.pomegranate.ui.screen.main.timetable.timetableEntry
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.liquid
 import io.github.fletchmckee.liquid.rememberLiquidState
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import pomegranate.composeapp.generated.resources.Res
-import pomegranate.composeapp.generated.resources.me
-import pomegranate.composeapp.generated.resources.modules
-import pomegranate.composeapp.generated.resources.timetable
 
 /**
  * 主页导航入口。
@@ -163,7 +155,8 @@ private fun MainContent(
             NavDisplay(
                 backStack = backStack,
                 modifier = Modifier
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .liquefiable(liquidState),
                 // 将 ViewModel 范围限定为 NavEntry
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
@@ -172,7 +165,6 @@ private fun MainContent(
                 entryProvider = entryProvider {
                     // 课表页
                     timetableEntry(
-                        liquidState = liquidState,
                         floatingToolbarExpanded = floatingToolbarExpanded,
                         onToolbarExpandedChange = { floatingToolbarExpanded = it },
                     )
@@ -184,41 +176,6 @@ private fun MainContent(
             )
         }
     }
-}
-
-/**
- * 主页部分。
- *
- * @param label 标签
- * @param icon 图标
- */
-enum class MainSection(
-    val label: StringResource,
-    val icon: ImageVector,
-) {
-    /**
-     * 模块。
-     */
-    Modules(
-        label = Res.string.modules,
-        icon = Icons.Rounded.ViewModule,
-    ),
-
-    /**
-     * 课表。
-     */
-    Timetable(
-        label = Res.string.timetable,
-        icon = Icons.Rounded.Schedule,
-    ),
-
-    /**
-     * 我。
-     */
-    Me(
-        label = Res.string.me,
-        icon = Icons.Rounded.Face4,
-    )
 }
 
 /**

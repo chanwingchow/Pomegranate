@@ -16,4 +16,7 @@
         <item>六</item>
         <item>日</item>
     </string-array>
+
+    <!-- 模块页 -->
+    <string name="otp">OTP</string>
 </resources>

@@ -40,9 +40,6 @@ import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import com.skydoves.cloudy.cloudy
 import com.skydoves.cloudy.rememberSky
 import com.skydoves.cloudy.sky
-import io.github.fletchmckee.liquid.LiquidState
-import io.github.fletchmckee.liquid.liquefiable
-import io.github.fletchmckee.liquid.rememberLiquidState
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
@@ -54,13 +51,11 @@ import pomegranate.composeapp.generated.resources.days_of_week
  * 课表页导航入口。
  */
 fun EntryProviderScope<NavKey>.timetableEntry(
-    liquidState: LiquidState,
     floatingToolbarExpanded: Boolean,
     onToolbarExpandedChange: (Boolean) -> Unit,
 ) {
     entry<TimetableRoute> {
         TimetableScreen(
-            liquidState = liquidState,
             toolbarExpanded = floatingToolbarExpanded,
             onToolbarExpandedChange = onToolbarExpandedChange,
         )
@@ -78,12 +73,10 @@ data object TimetableRoute : NavKey
  */
 @Composable
 private fun TimetableScreen(
-    liquidState: LiquidState,
     toolbarExpanded: Boolean,
     onToolbarExpandedChange: (Boolean) -> Unit,
 ) {
     TimetableContent(
-        liquidState = liquidState,
         toolbarExpanded = toolbarExpanded,
         onToolbarExpandedChange = onToolbarExpandedChange,
     )
@@ -94,7 +87,6 @@ private fun TimetableScreen(
 private fun TimetableContentPreview() {
     PomegranateExpressiveTheme {
         TimetableContent(
-            liquidState = rememberLiquidState(),
             toolbarExpanded = true,
             onToolbarExpandedChange = {},
         )
@@ -107,7 +99,6 @@ private fun TimetableContentPreview() {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun TimetableContent(
-    liquidState: LiquidState,
     toolbarExpanded: Boolean,
     onToolbarExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -155,7 +146,6 @@ private fun TimetableContent(
                     onExpand = { onToolbarExpandedChange(true) },
                     onCollapse = { onToolbarExpandedChange(false) },
                 )
-                .liquefiable(liquidState)
                 .sky(sky = sky),
             contentPadding = innerPadding,
             verticalArrangement = Arrangement.spacedBy(1.dp),
