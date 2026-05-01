@@ -33,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
@@ -48,21 +47,6 @@ import pomegranate.composeapp.generated.resources.app_name
 import pomegranate.composeapp.generated.resources.days_of_week
 
 /**
- * 课表页导航入口。
- */
-fun EntryProviderScope<NavKey>.timetableEntry(
-    floatingToolbarExpanded: Boolean,
-    onToolbarExpandedChange: (Boolean) -> Unit,
-) {
-    entry<TimetableRoute> {
-        TimetableScreen(
-            toolbarExpanded = floatingToolbarExpanded,
-            onToolbarExpandedChange = onToolbarExpandedChange,
-        )
-    }
-}
-
-/**
  * 课表页路由。
  */
 @Serializable
@@ -72,7 +56,7 @@ data object TimetableRoute : NavKey
  * 课表页。
  */
 @Composable
-private fun TimetableScreen(
+fun TimetableScreen(
     toolbarExpanded: Boolean,
     onToolbarExpandedChange: (Boolean) -> Unit,
 ) {

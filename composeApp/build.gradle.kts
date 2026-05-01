@@ -34,6 +34,8 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+
+            implementation(libs.bundles.network.android)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -46,6 +48,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
             implementation(libs.bundles.ui)
+            implementation(libs.bundles.network)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -53,6 +56,11 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+
+            implementation(libs.bundles.network.jvm)
+        }
+        iosMain.dependencies {
+            implementation(libs.bundles.network.ios)
         }
     }
 }

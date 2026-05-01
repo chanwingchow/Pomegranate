@@ -1,5 +1,7 @@
 package com.chow.pomegranate.ui.screen.main
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.captionBar
@@ -30,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.EntryProviderScope
@@ -41,11 +44,11 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.chow.pomegranate.ui.component.PomTooltipBox
 import com.chow.pomegranate.ui.screen.main.me.MeRoute
-import com.chow.pomegranate.ui.screen.main.me.meEntry
+import com.chow.pomegranate.ui.screen.main.me.MeScreen
 import com.chow.pomegranate.ui.screen.main.modules.ModulesRoute
-import com.chow.pomegranate.ui.screen.main.modules.modulesEntry
+import com.chow.pomegranate.ui.screen.main.modules.ModulesScreen
 import com.chow.pomegranate.ui.screen.main.timetable.TimetableRoute
-import com.chow.pomegranate.ui.screen.main.timetable.timetableEntry
+import com.chow.pomegranate.ui.screen.main.timetable.TimetableScreen
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import io.github.fletchmckee.liquid.liquefiable
 import io.github.fletchmckee.liquid.liquid
@@ -144,7 +147,12 @@ private fun MainContent(
                     .clip(CircleShape)
                     .liquid(liquidState) {
                         tint = liquidTint
-                    },
+                    }
+                    .border(
+                        width = 0.2.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = CircleShape,
+                    ),
                 colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
                     // 应用液态玻璃，不用默认的容器颜色
                     toolbarContainerColor = Color.Transparent,
@@ -164,14 +172,23 @@ private fun MainContent(
                 ),
                 entryProvider = entryProvider {
                     // 课表页
-                    timetableEntry(
-                        floatingToolbarExpanded = floatingToolbarExpanded,
-                        onToolbarExpandedChange = { floatingToolbarExpanded = it },
-                    )
+                    entry<TimetableRoute> {
+                        TimetableScreen(
+                            toolbarExpanded = floatingToolbarExpanded,
+                            onToolbarExpandedChange = { floatingToolbarExpanded = it },
+                        )
+                    }
                     // 模块页
-                    modulesEntry()
+                    entry<ModulesRoute> {
+                        ModulesScreen()
+                    }
                     // 我的页
-                    meEntry()
+                    entry<MeRoute> {
+                        MeScreen(
+                            toolbarExpanded = floatingToolbarExpanded,
+                            onToolbarExpandedChange = { floatingToolbarExpanded = it },
+                        )
+                    }
                 },
             )
         }
@@ -227,22 +244,31 @@ private fun FloatingToolbar(
             )
         },
     ) {
-        // 课表
-        val section = MainSection.Timetable
+        MainSection.entries.forEach { section ->
+            val checked = when (section) {
+                MainSection.Modules -> currentRoute is ModulesRoute
+                MainSection.Timetable -> currentRoute is TimetableRoute
+                MainSection.Me -> currentRoute is MeRoute
+            }
 
-        NavToggleButton(
-            checked = currentRoute is TimetableRoute,
-            onCheckedChange = {
-                if (expanded) {
-                    onNavigate(TimetableRoute)
-                } else {
-                    // 点击打开悬浮工具栏
-                    onExpandedChange(true)
+            if (expanded && section == MainSection.Timetable || !expanded && checked) {
+                AnimatedVisibility(true) {
+                    NavToggleButton(
+                        checked = checked,
+                        onCheckedChange = {
+                            if (expanded) {
+                                onNavigate(TimetableRoute)
+                            } else {
+                                // 点击打开悬浮工具栏
+                                onExpandedChange(true)
+                            }
+                        },
+                        label = stringResource(section.label),
+                        icon = section.icon,
+                    )
                 }
-            },
-            label = stringResource(section.label),
-            icon = section.icon,
-        )
+            }
+        }
     }
 }
 

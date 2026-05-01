@@ -1,9 +1,9 @@
 package com.chow.pomegranate.ui.screen.main
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Face4
-import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.ViewModule
+import androidx.compose.material.icons.twotone.Face4
+import androidx.compose.material.icons.twotone.Schedule
+import androidx.compose.material.icons.twotone.ViewModule
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.StringResource
 import pomegranate.composeapp.generated.resources.Res
@@ -26,7 +26,7 @@ enum class MainSection(
      */
     Modules(
         label = Res.string.modules,
-        icon = Icons.Rounded.ViewModule,
+        icon = Icons.TwoTone.ViewModule,
     ),
 
     /**
@@ -34,7 +34,7 @@ enum class MainSection(
      */
     Timetable(
         label = Res.string.timetable,
-        icon = Icons.Rounded.Schedule,
+        icon = Icons.TwoTone.Schedule,
     ),
 
     /**
@@ -42,6 +42,6 @@ enum class MainSection(
      */
     Me(
         label = Res.string.me,
-        icon = Icons.Rounded.Face4,
+        icon = Icons.TwoTone.Face4,
     )
 }

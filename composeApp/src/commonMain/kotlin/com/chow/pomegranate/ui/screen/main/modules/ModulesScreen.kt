@@ -16,20 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
-
-/**
- * 模块页导航入口。
- */
-fun EntryProviderScope<NavKey>.modulesEntry() {
-    entry<ModulesRoute> {
-        ModulesScreen()
-    }
-}
 
 /**
  * 模块页路由。
@@ -41,7 +31,7 @@ data object ModulesRoute : NavKey
  * 模块页。
  */
 @Composable
-private fun ModulesScreen() {
+fun ModulesScreen() {
     ModulesContent()
 }
 
