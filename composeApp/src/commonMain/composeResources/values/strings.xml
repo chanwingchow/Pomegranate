@@ -31,4 +31,16 @@
     <string name="girl">女生</string>
     <string name="favorite_color">喜欢的颜色</string>
     <string name="settings">设置</string>
+
+    <!-- 设置页 -->
+    <string name="nav_before">返回</string>
+    <string name="theme_mode">主题模式</string>
+    <string name="auto">自动</string>
+    <string name="light">浅色</string>
+    <string name="dark">深色</string>
+    <string name="week">周次</string>
+    <string name="tips">提示</string>
+    <string name="week_tooltip">周次影响课表展示，第 0 周表示开学前一周</string>
+    <string name="logo">应用图标</string>
+    <string name="dev_by_chow">由 Chanwing Chow 开发</string>
 </resources>

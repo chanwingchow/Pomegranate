@@ -60,6 +60,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import coil3.compose.AsyncImage
+import com.chow.pomegranate.BuildConfig
+import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.settings.SettingsRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.painterResource
@@ -117,6 +120,7 @@ private fun MeContent(
     onToolbarExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val backStack = LocalBackStack.current
     val layoutDirection = LocalLayoutDirection.current
 
     val wallpaperUrl = "https://cn.bing.com/th?id=OHR.CumberlandOaks_FR-FR5406318422_UHD.jpg"
@@ -181,7 +185,12 @@ private fun MeContent(
 
                 item {
                     // 设置
-                    OutlinedCard {
+                    OutlinedCard(
+                        onClick = {
+                            // 跳转到设置页
+                            backStack.add(SettingsRoute)
+                        }
+                    ) {
                         Icon(
                             Icons.Outlined.Settings,
                             contentDescription = stringResource(Res.string.settings),
@@ -272,7 +281,7 @@ private fun UserCard(
                 contentColor = LocalContentColor.current.copy(0.6f),
             ) {
                 Text(
-                    "v1.0.0",
+                    BuildConfig.versionName,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
                 )

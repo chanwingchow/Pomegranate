@@ -1,14 +1,18 @@
 package com.chow.pomegranate
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.screen.main.MainRoute
 import com.chow.pomegranate.ui.screen.main.mainEntry
+import com.chow.pomegranate.ui.screen.settings.SettingsRoute
+import com.chow.pomegranate.ui.screen.settings.settingsEntry
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.modules.SerializersModule
@@ -20,6 +24,7 @@ private val savedStateConfiguration = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
             subclass(MainRoute::class)
+            subclass(SettingsRoute::class)
         }
     }
 }
@@ -34,12 +39,18 @@ fun App() {
             MainRoute,
         )
 
-        NavDisplay(
-            backStack = backStack,
-            entryProvider = entryProvider {
-                // 主页
-                mainEntry()
-            },
-        )
+        CompositionLocalProvider(
+            LocalBackStack provides backStack,
+        ) {
+            NavDisplay(
+                backStack = backStack,
+                entryProvider = entryProvider {
+                    // 主页
+                    mainEntry()
+                    // 设置页
+                    settingsEntry()
+                },
+            )
+        }
     }
 }

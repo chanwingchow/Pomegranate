@@ -20,7 +20,7 @@ import pomegranate.composeapp.generated.resources.Res
 import pomegranate.composeapp.generated.resources.app_name
 
 /**
- * 顶部导航栏。
+ * 顶部导航。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

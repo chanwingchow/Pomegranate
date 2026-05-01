@@ -1,3 +1,4 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -8,6 +9,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
 
+    alias(libs.plugins.buildkonfig)
     alias(libs.plugins.kotlinSerialization)
 }
 
@@ -74,7 +76,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
     }
     packaging {
         resources {
@@ -105,5 +107,15 @@ compose.desktop {
             packageName = "com.chow.pomegranate"
             packageVersion = "1.0.0"
         }
+    }
+}
+
+buildkonfig {
+    packageName = "com.chow.pomegranate"
+    objectName = "BuildConfig"
+
+    defaultConfigs {
+        // 版本名称
+        buildConfigField(FieldSpec.Type.STRING, "versionName", "${android.defaultConfig.versionName}")
     }
 }

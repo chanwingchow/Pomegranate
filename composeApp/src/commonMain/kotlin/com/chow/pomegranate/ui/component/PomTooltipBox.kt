@@ -4,6 +4,7 @@ import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TooltipScope
+import androidx.compose.material3.TooltipState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,13 +21,22 @@ fun PomTooltipBox(
         // 在下方弹出
         positioning = TooltipAnchorPosition.Below,
     ),
+    state: TooltipState = rememberTooltipState(),
+    onDismissRequest: (() -> Unit)? = null,
+    focusable: Boolean = false,
+    enableUserInput: Boolean = true,
+    hasAction: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     TooltipBox(
         positionProvider = positionProvider,
         tooltip = tooltip,
-        state = rememberTooltipState(),
+        state = state,
         modifier = modifier,
+        onDismissRequest = onDismissRequest,
+        focusable = focusable,
+        enableUserInput = enableUserInput,
+        hasAction = hasAction,
         content = content,
     )
 }

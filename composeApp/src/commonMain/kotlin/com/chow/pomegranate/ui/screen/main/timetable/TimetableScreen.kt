@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.ZeroCornerSize
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
@@ -36,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import com.skydoves.cloudy.Sky
 import com.skydoves.cloudy.cloudy
 import com.skydoves.cloudy.rememberSky
 import com.skydoves.cloudy.sky
@@ -80,7 +80,7 @@ private fun TimetableContentPreview() {
 /**
  * 课表页内容。
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TimetableContent(
     toolbarExpanded: Boolean,
@@ -92,34 +92,9 @@ private fun TimetableContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            Surface(
-                shadowElevation = 1.dp,
-            ) {
-                Column(
-                    modifier = Modifier.cloudy(sky = sky),
-                ) {
-                    // 顶部导航栏
-                    PomTopAppBar(
-                        title = {
-                            // 周次
-                            TextButton(
-                                onClick = {},
-                                shape = MaterialShapes.ClamShell.toShape(),
-                            ) {
-                                Text(
-                                    stringResource(Res.string.app_name)
-                                )
-                            }
-                        },
-                        shadowElevation = 0.dp,
-                    )
-
-                    // 星期几行
-                    DaysOfWeekRow(
-                        color = MaterialTheme.colorScheme.surface.copy(0.8f),
-                    )
-                }
-            }
+            TopBar(
+                sky = sky,
+            )
         },
     ) { innerPadding ->
         LazyVerticalGrid(
@@ -188,6 +163,46 @@ private fun TimetableContent(
                     Modifier.height(height),
                 )
             }
+        }
+    }
+}
+
+/**
+ * 顶部导航。
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TopBar(
+    sky: Sky,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shadowElevation = 1.dp,
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.cloudy(sky = sky),
+        ) {
+            // 顶部导航
+            PomTopAppBar(
+                title = {
+                    // 周次
+                    TextButton(
+                        onClick = {},
+                        shape = MaterialShapes.ClamShell.toShape(),
+                    ) {
+                        Text(
+                            stringResource(Res.string.app_name)
+                        )
+                    }
+                },
+                shadowElevation = 0.dp,
+            )
+
+            // 星期几行
+            DaysOfWeekRow(
+                color = MaterialTheme.colorScheme.surface.copy(0.8f),
+            )
         }
     }
 }
