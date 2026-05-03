@@ -13,6 +13,8 @@ import com.chow.pomegranate.ui.screen.login.LoginRoute
 import com.chow.pomegranate.ui.screen.login.loginEntry
 import com.chow.pomegranate.ui.screen.main.MainRoute
 import com.chow.pomegranate.ui.screen.main.mainEntry
+import com.chow.pomegranate.ui.screen.otp.OtpRoute
+import com.chow.pomegranate.ui.screen.otp.otpEntry
 import com.chow.pomegranate.ui.screen.settings.SettingsRoute
 import com.chow.pomegranate.ui.screen.settings.settingsEntry
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
@@ -28,6 +30,7 @@ private val savedStateConfiguration = SavedStateConfiguration {
             subclass(MainRoute::class)
             subclass(SettingsRoute::class)
             subclass(LoginRoute::class)
+            subclass(OtpRoute::class)
         }
     }
 }
@@ -54,6 +57,8 @@ fun App() {
                     settingsEntry()
                     // 登录页
                     loginEntry()
+                    // OTP 页
+                    otpEntry()
                 },
             )
         }

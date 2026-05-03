@@ -26,7 +26,6 @@ import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.NavigateBefore
 import androidx.compose.material.icons.automirrored.twotone.Login
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -62,11 +61,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.component.VisibilityIconButton
 import com.chow.pomegranate.ui.input.PasswordOutputTransformation
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import com.skydoves.cloudy.cloudy
+import com.skydoves.cloudy.rememberSky
+import com.skydoves.cloudy.sky
 import com.valentinilk.shimmer.LocalShimmerTheme
 import com.valentinilk.shimmer.ShimmerBounds
 import com.valentinilk.shimmer.rememberShimmer
@@ -87,7 +90,6 @@ import pomegranate.composeapp.generated.resources.ic_logo
 import pomegranate.composeapp.generated.resources.logging_in
 import pomegranate.composeapp.generated.resources.login
 import pomegranate.composeapp.generated.resources.logo
-import pomegranate.composeapp.generated.resources.nav_before
 import pomegranate.composeapp.generated.resources.password
 import pomegranate.composeapp.generated.resources.username
 import kotlin.time.Duration.Companion.seconds
@@ -111,7 +113,7 @@ data object LoginRoute : NavKey
  * 登录页。
  */
 @Composable
-fun LoginScreen(
+private fun LoginScreen(
     modifier: Modifier = Modifier,
 ) {
     LoginContent(
@@ -135,6 +137,8 @@ private fun LoginContent(
     modifier: Modifier = Modifier,
 ) {
     val backStack = LocalBackStack.current
+
+    val sky = rememberSky()
 
     // 学号
     val username = rememberTextFieldState()
@@ -172,10 +176,12 @@ private fun LoginContent(
                 onBack = {
                     backStack.removeLast()
                 },
+                modifier = Modifier.cloudy(sky = sky),
             )
         },
     ) { innerPadding ->
         LazyColumn(
+            modifier = Modifier.sky(sky = sky),
             contentPadding = innerPadding + PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -312,14 +318,9 @@ private fun TopBar(
         modifier = modifier,
         navigationIcon = {
             // 返回按钮
-            IconButton(
+            BackIconButton(
                 onClick = onBack,
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.NavigateBefore,
-                    contentDescription = stringResource(Res.string.nav_before),
-                )
-            }
+            )
         },
     )
 }

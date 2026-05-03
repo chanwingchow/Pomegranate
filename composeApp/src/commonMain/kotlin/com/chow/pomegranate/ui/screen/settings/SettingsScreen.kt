@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.NavigateBefore
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.twotone.AutoMode
 import androidx.compose.material.icons.twotone.DarkMode
@@ -24,7 +23,6 @@ import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
@@ -48,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.BuildConfig
+import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.PomTooltipBox
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.navigation.LocalBackStack
@@ -68,7 +67,6 @@ import pomegranate.composeapp.generated.resources.dev_by_chow
 import pomegranate.composeapp.generated.resources.ic_logo
 import pomegranate.composeapp.generated.resources.light
 import pomegranate.composeapp.generated.resources.logo
-import pomegranate.composeapp.generated.resources.nav_before
 import pomegranate.composeapp.generated.resources.settings
 import pomegranate.composeapp.generated.resources.theme_mode
 import pomegranate.composeapp.generated.resources.tips
@@ -94,7 +92,7 @@ data object SettingsRoute : NavKey
  * 设置页。
  */
 @Composable
-fun SettingsScreen() {
+private fun SettingsScreen() {
     SettingsContent()
 }
 
@@ -183,14 +181,9 @@ private fun TopBar(
         modifier = modifier,
         navigationIcon = {
             // 返回按钮
-            IconButton(
+            BackIconButton(
                 onClick = onBack,
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.NavigateBefore,
-                    contentDescription = stringResource(Res.string.nav_before),
-                )
-            }
+            )
         },
     )
 }

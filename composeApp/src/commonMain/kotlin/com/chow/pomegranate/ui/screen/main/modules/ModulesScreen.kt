@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
+import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.otp.OtpRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
@@ -50,6 +52,8 @@ private fun ModulesContentPreview() {
 private fun ModulesContent(
     modifier: Modifier = Modifier,
 ) {
+    val backStack = LocalBackStack.current
+
     Scaffold(
         modifier = modifier,
     ) { innerPadding ->
@@ -61,7 +65,11 @@ private fun ModulesContent(
                 val moduleLabel = stringResource(module.label)
 
                 ModuleItem(
-                    onClick = { },
+                    onClick = {
+                        when(module) {
+                            Module.OTP -> backStack.add(OtpRoute)
+                        }
+                    },
                     headlineContent = {
                         Text(
                             moduleLabel,

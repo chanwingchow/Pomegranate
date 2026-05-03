@@ -7,6 +7,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import org.jetbrains.compose.resources.stringResource
 import pomegranate.composeapp.generated.resources.Res
 import pomegranate.composeapp.generated.resources.hide_password
@@ -39,6 +41,17 @@ fun VisibilityIconButton(
                     Res.string.show_password
                 },
             ),
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun VisibilityIconButtonPreview() {
+    PomegranateExpressiveTheme {
+        VisibilityIconButton(
+            visible = true,
+            onVisibleChange = {},
         )
     }
 }

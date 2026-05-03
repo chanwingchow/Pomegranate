@@ -1,5 +1,6 @@
 package com.chow.pomegranate.ui.component
 
+import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -8,7 +9,12 @@ import androidx.compose.material3.TooltipState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.PopupPositionProvider
+import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import org.jetbrains.compose.resources.stringResource
+import pomegranate.composeapp.generated.resources.Res
+import pomegranate.composeapp.generated.resources.app_name
 
 /**
  * 工具提示。
@@ -39,4 +45,18 @@ fun PomTooltipBox(
         hasAction = hasAction,
         content = content,
     )
+}
+
+@Preview
+@Composable
+private fun PomTooltipBoxPreview() {
+    PomegranateExpressiveTheme {
+        PomTooltipBox(
+            tooltip = {
+                Text(stringResource(Res.string.app_name))
+            },
+            state = rememberTooltipState(initialIsVisible = true),
+            content = {},
+        )
+    }
 }

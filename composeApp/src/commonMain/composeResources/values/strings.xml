@@ -57,4 +57,9 @@
     <string name="hide_password">隐藏密码</string>
     <string name="expand">展开</string>
     <string name="collapse">收起</string>
+
+    <!-- OTP 页-->
+    <string name="add">添加</string>
+    <string name="edit">编辑</string>
+    <string name="delete">删除</string>
 </resources>
