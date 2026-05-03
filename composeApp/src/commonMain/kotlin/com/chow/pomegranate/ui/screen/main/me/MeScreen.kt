@@ -249,7 +249,7 @@ private fun UserCard(
                 ) {
                     if (avatar == null) {
                         // 默认头像
-                        Image(
+                        Icon(
                             painterResource(Res.drawable.ic_logo),
                             contentDescription = stringResource(Res.string.avatar),
                         )

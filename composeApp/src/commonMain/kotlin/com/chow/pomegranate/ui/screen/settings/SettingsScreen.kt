@@ -213,7 +213,7 @@ private fun AppCard(
                     Surface(
                         shape = MaterialTheme.shapes.small,
                     ) {
-                        Image(
+                        Icon(
                             painterResource(Res.drawable.ic_logo),
                             contentDescription = stringResource(Res.string.logo),
                             modifier = Modifier.size(28.dp),

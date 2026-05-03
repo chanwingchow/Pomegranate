@@ -5,7 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -344,8 +344,12 @@ private fun PomIntroduction(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             shape = MaterialTheme.shapes.extraLarge,
             shadowElevation = 2.dp,
+            border = BorderStroke(
+                width = 0.5.dp,
+                color = MaterialTheme.colorScheme.primaryFixed,
+            ),
         ) {
-            Image(
+            Icon(
                 painterResource(Res.drawable.ic_logo),
                 contentDescription = stringResource(Res.string.logo),
                 modifier = Modifier.size(72.dp).shimmer(
