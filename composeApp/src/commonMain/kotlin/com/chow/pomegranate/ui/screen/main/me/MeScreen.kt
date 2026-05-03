@@ -62,6 +62,7 @@ import androidx.navigation3.runtime.NavKey
 import coil3.compose.AsyncImage
 import com.chow.pomegranate.BuildConfig
 import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.login.LoginRoute
 import com.chow.pomegranate.ui.screen.settings.SettingsRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
@@ -151,6 +152,10 @@ private fun MeContent(
         ) {
             // 用户卡片
             UserCard(
+                onClick = {
+                    // 跳转到登录页
+                    backStack.add(LoginRoute)
+                },
                 avatar = null,
                 background = wallpaperUrl,
                 modifier = Modifier.padding(16.dp).height(userCardHeight),
@@ -208,11 +213,13 @@ private fun MeContent(
  */
 @Composable
 private fun UserCard(
+    onClick: () -> Unit,
     avatar: Any?,
     background: Any?,
     modifier: Modifier = Modifier,
 ) {
     Surface(
+        onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.primaryContainer,

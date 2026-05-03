@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">小石榴</string>
+    <string name="app_poem">人生若只如初见，何事秋风悲画扇。</string>
 
     <!-- 主页 -->
     <string name="timetable">课表</string>
@@ -43,4 +44,17 @@
     <string name="week_tooltip">周次影响课表展示，第 0 周表示开学前一周</string>
     <string name="logo">应用图标</string>
     <string name="dev_by_chow">由 Chanwing Chow 开发</string>
+
+    <!-- 登录页 -->
+    <string name="login">登录</string>
+    <string name="logging_in">登录中</string>
+    <string name="username">学号</string>
+    <string name="password">密码</string>
+    <string name="extracurricular_password">第二课堂密码</string>
+    <string name="default_extracurricular_password">默认是学号</string>
+    <string name="forget_password">忘记密码</string>
+    <string name="show_password">显示密码</string>
+    <string name="hide_password">隐藏密码</string>
+    <string name="expand">展开</string>
+    <string name="collapse">收起</string>
 </resources>

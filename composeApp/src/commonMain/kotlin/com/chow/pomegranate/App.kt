@@ -9,6 +9,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.login.LoginRoute
+import com.chow.pomegranate.ui.screen.login.loginEntry
 import com.chow.pomegranate.ui.screen.main.MainRoute
 import com.chow.pomegranate.ui.screen.main.mainEntry
 import com.chow.pomegranate.ui.screen.settings.SettingsRoute
@@ -25,6 +27,7 @@ private val savedStateConfiguration = SavedStateConfiguration {
         polymorphic(NavKey::class) {
             subclass(MainRoute::class)
             subclass(SettingsRoute::class)
+            subclass(LoginRoute::class)
         }
     }
 }
@@ -49,6 +52,8 @@ fun App() {
                     mainEntry()
                     // 设置页
                     settingsEntry()
+                    // 登录页
+                    loginEntry()
                 },
             )
         }
