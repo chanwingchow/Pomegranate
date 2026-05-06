@@ -1,0 +1,12 @@
+package com.chow.pomegranate
+
+/**
+ * 校区。
+ */
+enum class Campus {
+    /** 广州校区 */
+    Canton,
+
+    /** 佛山校区 */
+    Foshan;
+}

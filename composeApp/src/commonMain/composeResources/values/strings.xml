@@ -20,6 +20,7 @@
 
     <!-- 模块页 -->
     <string name="otp">OTP</string>
+    <string name="emergency_contact">紧急电话</string>
 
     <!-- 我的页 -->
     <string name="avatar">头像</string>
@@ -27,6 +28,7 @@
     <string name="wallpaper">壁纸</string>
     <string name="campus">校区</string>
     <string name="campus_canton">广州校区</string>
+    <string name="campus_foshan">佛山校区</string>
     <string name="gender">性别</string>
     <string name="boy">男生</string>
     <string name="girl">女生</string>
@@ -62,4 +64,10 @@
     <string name="add">添加</string>
     <string name="edit">编辑</string>
     <string name="delete">删除</string>
+
+    <!-- 紧急电话页 -->
+    <string name="outpatient_department">门诊部急救</string>
+    <string name="campus_alarm">校园报警</string>
+    <string name="campus_police_station">校区警务室</string>
+    <string name="guanzhou_police_station">官洲派出所</string>
 </resources>

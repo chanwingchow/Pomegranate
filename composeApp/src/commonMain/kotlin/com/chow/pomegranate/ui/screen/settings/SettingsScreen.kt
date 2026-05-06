@@ -114,6 +114,7 @@ private fun SettingsContent(
 ) {
     val backStack = LocalBackStack.current
 
+    // 高斯模糊
     val sky = rememberSky()
 
     // 主题模式

@@ -49,8 +49,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
-            implementation(libs.bundles.ui)
+            implementation(libs.bundles.datetime)
             implementation(libs.bundles.network)
+            implementation(libs.bundles.ui)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -56,6 +56,9 @@ import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import com.skydoves.cloudy.cloudy
+import com.skydoves.cloudy.rememberSky
+import com.skydoves.cloudy.sky
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
@@ -111,6 +114,9 @@ private fun OtpContent(
 
     val lazyGridState = rememberLazyGridState()
 
+    // 高斯模糊
+    val sky = rememberSky()
+
     // 悬浮按钮是否可见
     var floatingActionButtonVisible by remember { mutableStateOf(true) }
 
@@ -138,6 +144,7 @@ private fun OtpContent(
                 onBack = {
                     backStack.removeLast()
                 },
+                modifier = Modifier.cloudy(sky = sky),
             )
         },
         floatingActionButton = {
@@ -187,7 +194,7 @@ private fun OtpContent(
                 expanded = floatingActionButtonVisible,
                 onExpand = { floatingActionButtonVisible = true },
                 onCollapse = { floatingActionButtonVisible = false },
-            ),
+            ).sky(sky = sky),
             state = lazyGridState,
             contentPadding = innerPadding + PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

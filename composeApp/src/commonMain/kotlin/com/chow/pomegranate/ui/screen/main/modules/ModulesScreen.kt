@@ -1,6 +1,7 @@
 package com.chow.pomegranate.ui.screen.main.modules
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -20,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.contact.ContactRoute
 import com.chow.pomegranate.ui.screen.otp.OtpRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
@@ -60,16 +62,19 @@ private fun ModulesContent(
         modifier = modifier,
     ) { innerPadding ->
         LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Adaptive(160.dp),
+            columns = StaggeredGridCells.Adaptive(120.dp),
             contentPadding = innerPadding + PaddingValues(16.dp),
+            verticalItemSpacing = 16.dp,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(Module.entries) { module ->
                 val moduleLabel = stringResource(module.label)
 
                 ModuleItem(
                     onClick = {
-                        when(module) {
+                        when (module) {
                             Module.OTP -> backStack.add(OtpRoute)
+                            Module.EmergencyContact -> backStack.add(ContactRoute)
                         }
                     },
                     headlineContent = {
@@ -83,7 +88,6 @@ private fun ModulesContent(
                         when (module) {
                             else -> Unit
                         }
-                        Text("Hello")
                     },
                     trailingContent = {
                         Icon(

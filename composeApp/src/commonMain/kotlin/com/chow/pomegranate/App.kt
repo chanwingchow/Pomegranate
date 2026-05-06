@@ -9,6 +9,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.contact.ContactRoute
+import com.chow.pomegranate.ui.screen.contact.contactEntry
 import com.chow.pomegranate.ui.screen.login.LoginRoute
 import com.chow.pomegranate.ui.screen.login.loginEntry
 import com.chow.pomegranate.ui.screen.main.MainRoute
@@ -31,6 +33,7 @@ private val savedStateConfiguration = SavedStateConfiguration {
             subclass(SettingsRoute::class)
             subclass(LoginRoute::class)
             subclass(OtpRoute::class)
+            subclass(ContactRoute::class)
         }
     }
 }
@@ -59,6 +62,8 @@ fun App() {
                     loginEntry()
                     // OTP 页
                     otpEntry()
+                    // 紧急电话页
+                    contactEntry()
                 },
             )
         }

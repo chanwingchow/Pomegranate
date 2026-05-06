@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,18 +31,21 @@ fun PomTopAppBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     shadowElevation: Dp = 1.dp,
+    colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(
+        containerColor = MaterialTheme.colorScheme.surface.copy(0.8f),
+    ),
     contentPadding: PaddingValues = TopAppBarDefaults.ContentPadding,
 ) {
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surface.copy(0.8f),
+        color = colors.containerColor,
         shadowElevation = shadowElevation,
     ) {
         TopAppBar(
             title = title,
             navigationIcon = navigationIcon,
             actions = actions,
-            colors = TopAppBarDefaults.topAppBarColors(
+            colors = colors.copy(
                 containerColor = Color.Transparent,
             ),
             contentPadding = contentPadding,

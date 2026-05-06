@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -35,7 +36,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
-import com.skydoves.cloudy.Sky
 import com.skydoves.cloudy.cloudy
 import com.skydoves.cloudy.rememberSky
 import com.skydoves.cloudy.sky
@@ -93,7 +93,7 @@ private fun TimetableContent(
         modifier = modifier,
         topBar = {
             TopBar(
-                sky = sky,
+                modifier = Modifier.cloudy(sky = sky),
             )
         },
     ) { innerPadding ->
@@ -173,15 +173,15 @@ private fun TimetableContent(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TopBar(
-    sky: Sky,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         shadowElevation = 1.dp,
+        color = MaterialTheme.colorScheme.surface.copy(0.8f),
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.cloudy(sky = sky),
+            modifier = Modifier,
         ) {
             // 顶部导航
             PomTopAppBar(
@@ -197,12 +197,13 @@ private fun TopBar(
                     }
                 },
                 shadowElevation = 0.dp,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                ),
             )
 
             // 星期几行
-            DaysOfWeekRow(
-                color = MaterialTheme.colorScheme.surface.copy(0.8f),
-            )
+            DaysOfWeekRow()
         }
     }
 }
@@ -212,29 +213,26 @@ private fun TopBar(
  */
 @Composable
 private fun DaysOfWeekRow(
-    color: Color = MaterialTheme.colorScheme.surface,
+    modifier: Modifier = Modifier,
 ) {
     val dayOfWeeks = stringArrayResource(Res.array.days_of_week)
 
-    Surface(
-        color = color,
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(1.dp),
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(1.dp),
-        ) {
-            Spacer(Modifier.weight(2f))
+        Spacer(Modifier.weight(2f))
 
-            dayOfWeeks.forEach {
-                DayOfWeekItem(
-                    dayOfWeek = {
-                        Text(it)
-                    },
-                    datetime = {
-                        Text("12/03")
-                    },
-                    modifier = Modifier.weight(3f),
-                )
-            }
+        dayOfWeeks.forEach {
+            DayOfWeekItem(
+                dayOfWeek = {
+                    Text(it)
+                },
+                datetime = {
+                    Text("12/03")
+                },
+                modifier = Modifier.weight(3f),
+            )
         }
     }
 }
@@ -328,7 +326,10 @@ private fun CourseItem(
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.primaryContainer,
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.inversePrimary),
+        border = BorderStroke(
+            width = 0.5.dp,
+            color = MaterialTheme.colorScheme.inversePrimary,
+        ),
     ) {
         CompositionLocalProvider(
             LocalTextStyle provides MaterialTheme.typography.bodySmall,
