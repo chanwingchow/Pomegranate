@@ -303,7 +303,6 @@ private fun OtpCard(
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.elevatedCardColors(),
         elevation = CardDefaults.elevatedCardElevation(),
         border = BorderStroke(
             width = 0.5.dp,

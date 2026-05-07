@@ -241,7 +241,6 @@ private fun ContactCard(
         onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors(),
         elevation = CardDefaults.elevatedCardElevation(),
         border = BorderStroke(
             width = 0.5.dp,

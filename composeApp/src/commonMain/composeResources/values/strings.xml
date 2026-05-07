@@ -21,6 +21,7 @@
     <!-- 模块页 -->
     <string name="otp">OTP</string>
     <string name="emergency_contact">紧急电话</string>
+    <string name="academic_notice">教务通知</string>
 
     <!-- 我的页 -->
     <string name="avatar">头像</string>

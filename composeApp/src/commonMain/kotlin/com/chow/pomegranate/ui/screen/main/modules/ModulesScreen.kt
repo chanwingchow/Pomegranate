@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.screen.contact.ContactRoute
+import com.chow.pomegranate.ui.screen.notice.NoticeRoute
 import com.chow.pomegranate.ui.screen.otp.OtpRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
@@ -75,6 +76,7 @@ private fun ModulesContent(
                         when (module) {
                             Module.OTP -> backStack.add(OtpRoute)
                             Module.EmergencyContact -> backStack.add(ContactRoute)
+                            Module.AcademicNotice -> backStack.add(NoticeRoute)
                         }
                     },
                     headlineContent = {
@@ -117,7 +119,6 @@ private fun ModuleItem(
         onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors(),
         elevation = CardDefaults.elevatedCardElevation(),
         border = BorderStroke(
             width = 0.5.dp,
