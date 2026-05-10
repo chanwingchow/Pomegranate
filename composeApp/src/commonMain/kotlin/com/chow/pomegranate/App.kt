@@ -21,6 +21,8 @@ import com.chow.pomegranate.ui.screen.otp.OtpRoute
 import com.chow.pomegranate.ui.screen.otp.otpEntry
 import com.chow.pomegranate.ui.screen.settings.SettingsRoute
 import com.chow.pomegranate.ui.screen.settings.settingsEntry
+import com.chow.pomegranate.ui.screen.websites.WebsitesRoute
+import com.chow.pomegranate.ui.screen.websites.websitesEntry
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.modules.SerializersModule
@@ -37,6 +39,7 @@ private val savedStateConfiguration = SavedStateConfiguration {
             subclass(OtpRoute::class)
             subclass(ContactRoute::class)
             subclass(NoticeRoute::class)
+            subclass(WebsitesRoute::class)
         }
     }
 }
@@ -67,8 +70,10 @@ fun App() {
                     otpEntry()
                     // 紧急电话页
                     contactEntry()
-                    // 教务通知页
+                    // 教学通知页
                     noticeEntry()
+                    // 常用网站页
+                    websitesEntry()
                 },
             )
         }

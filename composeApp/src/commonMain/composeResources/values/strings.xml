@@ -21,7 +21,8 @@
     <!-- 模块页 -->
     <string name="otp">OTP</string>
     <string name="emergency_contact">紧急电话</string>
-    <string name="academic_notice">教务通知</string>
+    <string name="academic_notice">教学通知</string>
+    <string name="useful_websites">常用网站</string>
 
     <!-- 我的页 -->
     <string name="avatar">头像</string>
@@ -71,4 +72,17 @@
     <string name="campus_alarm">校园报警</string>
     <string name="campus_police_station">校区警务室</string>
     <string name="guanzhou_police_station">官洲派出所</string>
+
+    <!-- 常用网站页 -->
+    <string name="campus_network">校园网</string>
+    <string name="library">图书馆</string>
+    <string name="convergence_portal">融合门户</string>
+    <string name="integrated_platform">一体化平台</string>
+    <string name="academic_affairs_system">教务系统</string>
+    <string name="extracurricular_activities">第二课堂</string>
+    <string name="financial_system">财务系统</string>
+    <string name="gdufe_mooc">广财慕课</string>
+    <string name="gdufe_blackboard">毕博平台</string>
+    <string name="gdufe_name">广财通</string>
+    <string name="open_in_browser">在浏览器打开</string>
 </resources>

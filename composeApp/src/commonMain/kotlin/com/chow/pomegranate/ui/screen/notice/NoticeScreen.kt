@@ -59,7 +59,7 @@ import pomegranate.composeapp.generated.resources.add
 import pomegranate.composeapp.generated.resources.app_name
 
 /**
- * 教务通知页导航入口。
+ * 教学通知页导航入口。
  */
 fun EntryProviderScope<NavKey>.noticeEntry() {
     entry<NoticeRoute> {
@@ -68,13 +68,13 @@ fun EntryProviderScope<NavKey>.noticeEntry() {
 }
 
 /**
- * 教务通知页路由。
+ * 教学通知页路由。
  */
 @Serializable
 data object NoticeRoute : NavKey
 
 /**
- * 教务通知页。
+ * 教学通知页。
  */
 @Composable
 private fun NoticeScreen(
@@ -93,6 +93,9 @@ private fun NoticeContentPreview() {
     }
 }
 
+/**
+ * 教学通知页内容。
+ */
 @Composable
 private fun NoticeContent(
     modifier: Modifier = Modifier,
@@ -249,11 +252,10 @@ private fun NoticeCard(
                 supportingContent = {
                     // 链接
                     CompositionLocalProvider(
-                        LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant,
+                        LocalContentColor provides MaterialTheme.colorScheme.outline,
                         LocalTextStyle provides MaterialTheme.typography.bodySmall,
-                    ) {
-                        url()
-                    }
+                        content = url,
+                    )
                 },
             )
         }
@@ -265,7 +267,7 @@ private fun NoticeCard(
                 topStart = ZeroCornerSize,
                 bottomEnd = ZeroCornerSize,
             ),
-            color = MaterialTheme.colorScheme.primaryContainer,
+            color = MaterialTheme.colorScheme.tertiaryContainer,
         ) {
             Box(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),

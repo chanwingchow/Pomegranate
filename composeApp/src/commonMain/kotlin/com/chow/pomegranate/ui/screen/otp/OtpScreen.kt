@@ -103,6 +103,9 @@ private fun OtpContentPreview() {
     }
 }
 
+/**
+ * OTP 页内容。
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun OtpContent(

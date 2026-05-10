@@ -4,12 +4,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Phone
 import androidx.compose.material.icons.twotone.Security
+import androidx.compose.material.icons.twotone.Web
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.StringResource
 import pomegranate.composeapp.generated.resources.Res
 import pomegranate.composeapp.generated.resources.academic_notice
 import pomegranate.composeapp.generated.resources.emergency_contact
 import pomegranate.composeapp.generated.resources.otp
+import pomegranate.composeapp.generated.resources.useful_websites
 
 /**
  * 模块。
@@ -21,18 +23,27 @@ enum class Module(
     val label: StringResource,
     val icon: ImageVector,
 ) {
+    /** OTP */
     OTP(
         label = Res.string.otp,
         icon = Icons.TwoTone.Security,
     ),
 
+    /** 紧急电话 */
     EmergencyContact(
         label = Res.string.emergency_contact,
         icon = Icons.TwoTone.Phone,
     ),
 
+    /** 教学通知 */
     AcademicNotice(
         label = Res.string.academic_notice,
         icon = Icons.TwoTone.NotificationsActive,
+    ),
+
+    /** 常用网站 */
+    UsefulWebsites(
+        label = Res.string.useful_websites,
+        icon = Icons.TwoTone.Web,
     )
 }

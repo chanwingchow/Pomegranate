@@ -102,7 +102,7 @@ private fun MainContentPreview() {
 }
 
 /**
- * 首页内容。
+ * 主页内容。
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

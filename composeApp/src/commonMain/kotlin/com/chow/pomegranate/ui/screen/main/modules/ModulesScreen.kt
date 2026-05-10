@@ -24,6 +24,7 @@ import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.screen.contact.ContactRoute
 import com.chow.pomegranate.ui.screen.notice.NoticeRoute
 import com.chow.pomegranate.ui.screen.otp.OtpRoute
+import com.chow.pomegranate.ui.screen.websites.WebsitesRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
@@ -63,7 +64,7 @@ private fun ModulesContent(
         modifier = modifier,
     ) { innerPadding ->
         LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Adaptive(120.dp),
+            columns = StaggeredGridCells.Adaptive(152.dp),
             contentPadding = innerPadding + PaddingValues(16.dp),
             verticalItemSpacing = 16.dp,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -77,6 +78,7 @@ private fun ModulesContent(
                             Module.OTP -> backStack.add(OtpRoute)
                             Module.EmergencyContact -> backStack.add(ContactRoute)
                             Module.AcademicNotice -> backStack.add(NoticeRoute)
+                            Module.UsefulWebsites -> backStack.add(WebsitesRoute)
                         }
                     },
                     headlineContent = {

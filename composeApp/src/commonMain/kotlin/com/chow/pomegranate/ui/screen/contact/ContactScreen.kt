@@ -85,6 +85,9 @@ private fun ContactContentPreview() {
     }
 }
 
+/**
+ * 紧急电话页内容。
+ */
 @Composable
 private fun ContactContent(
     modifier: Modifier = Modifier,
