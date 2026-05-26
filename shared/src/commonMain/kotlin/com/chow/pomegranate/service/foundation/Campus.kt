@@ -1,4 +1,4 @@
-package com.chow.pomegranate
+package com.chow.pomegranate.service.foundation
 
 /**
  * 校区。

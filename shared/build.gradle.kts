@@ -53,21 +53,24 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
-            implementation(libs.bundles.network.android)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.tess4Android)
         }
         commonMain.dependencies {
             implementation(libs.bundles.datetime)
             implementation(libs.bundles.network)
             implementation(libs.bundles.ui)
+            implementation(libs.bundles.utils)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
         jvmMain.dependencies {
-            implementation(libs.bundles.network.jvm)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.tess4j)
         }
         iosMain.dependencies {
-            implementation(libs.bundles.network.ios)
+            implementation(libs.ktor.client.darwin)
         }
     }
 }

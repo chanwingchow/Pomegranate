@@ -34,7 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.chow.pomegranate.Campus
+import com.chow.pomegranate.service.foundation.Campus
 import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.navigation.LocalBackStack
