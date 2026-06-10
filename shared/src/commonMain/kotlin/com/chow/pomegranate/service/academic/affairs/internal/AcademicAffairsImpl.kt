@@ -8,6 +8,7 @@ import io.ktor.client.HttpClient
  */
 internal class AcademicAffairsImpl(
     httpClient: HttpClient,
-): AcademicAffairs {
+) : AcademicAffairs {
     override val auth: AcademicAffairs.Auth = AuthImpl(httpClient)
+    override val enrollment: AcademicAffairs.Enrollment = EnrollmentImpl(httpClient)
 }

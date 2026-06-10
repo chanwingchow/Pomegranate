@@ -1,10 +1,9 @@
 package com.chow.pomegranate.service.academic.affairs.internal
 
 import com.chow.pomegranate.service.academic.affairs.api.AcademicAffairs
+import com.chow.pomegranate.service.academic.affairs.internal.parser.LoginErrorMessageParser
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
-import com.fleeksoft.ksoup.Ksoup
-import com.fleeksoft.ksoup.select.Evaluator
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
@@ -49,10 +48,8 @@ internal class AuthImpl(
                 LoginResult.Success
             } else {
                 // 解析 HTML
-                val doc = Ksoup.parse(text)
-                // 错误信息，可能为 captchaErrorMsg
-                val message = doc.selectFirst(Evaluator.Tag("font"))?.text()
-                error(message ?: doc.title())
+                val message = LoginErrorMessageParser.parse(text)
+                error(message)
             }
         } catch (e: Exception) {
             if (e.message == captchaErrorMsg) {

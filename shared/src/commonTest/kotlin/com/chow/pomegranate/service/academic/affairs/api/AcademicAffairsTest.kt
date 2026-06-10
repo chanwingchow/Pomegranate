@@ -2,6 +2,7 @@ package com.chow.pomegranate.service.academic.affairs.api
 
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
+import com.chow.pomegranate.service.foundation.Semester
 import com.chow.pomegranate.tool.ocr.createCaptchaOcrEngine
 import com.moondeveloper.ocr.OcrEngine
 import io.ktor.utils.io.readText
@@ -12,7 +13,8 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.fail
 
 /**
  * 教务系统测试。
@@ -52,6 +54,27 @@ class AcademicAffairsTest {
      */
     @Test
     fun login() = runBlocking {
+        runWithAcademicAffairsLogin {}
+    }
+
+    /**
+     * 获取课表测试。
+     */
+    @Test
+    fun getTimetable() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val semester = Semester.now()
+
+            val timetable = academicAffairs.enrollment.getTimetable(semester)
+
+            assertEquals(semester, timetable.semester)
+        }
+    }
+
+    /**
+     * 在登录的情况下运行 [block]。
+     */
+    private suspend inline fun runWithAcademicAffairsLogin(block: () -> Unit) {
         var count = 5
 
         while (count-- > 0) {
@@ -69,15 +92,25 @@ class AcademicAffairsTest {
             )
             val loginResult = academicAffairs.auth.login(param)
 
-            if (loginResult is LoginResult.Fail.CaptchaError) {
-                // 验证码错误重试
-                continue
-            }
+            when (loginResult) {
+                is LoginResult.Fail.CaptchaError -> {
+                    continue
+                }
 
-            assertTrue { loginResult is LoginResult.Success }.also { academicAffairs.auth.logout() }
-            return@runBlocking
+                is LoginResult.Fail.Unknow -> {
+                    fail()
+                }
+
+                is LoginResult.Success -> {
+                    return try {
+                        block()
+                    } finally {
+                        academicAffairs.auth.logout()
+                    }
+                }
+            }
         }
 
-        assertTrue { false }
+        fail()
     }
 }
