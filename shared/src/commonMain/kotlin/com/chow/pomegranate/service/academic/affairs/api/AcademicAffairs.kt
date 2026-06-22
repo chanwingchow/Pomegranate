@@ -1,6 +1,7 @@
 package com.chow.pomegranate.service.academic.affairs.api
 
 import com.chow.pomegranate.service.academic.affairs.internal.AcademicAffairsImpl
+import com.chow.pomegranate.service.academic.affairs.model.CourseTimetable
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
 import com.chow.pomegranate.service.academic.affairs.model.Timetable
@@ -68,5 +69,10 @@ interface AcademicAffairs {
          * 返回课表。
          */
         suspend fun getTimetable(semester: Semester): Timetable
+
+        /**
+         * 返回课程课表。
+         */
+        suspend fun getCourseTimetable(semester: Semester): CourseTimetable
     }
 }

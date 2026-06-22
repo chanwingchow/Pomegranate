@@ -14,6 +14,7 @@ import kotlinx.io.files.SystemFileSystem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 /**
@@ -54,7 +55,9 @@ class AcademicAffairsTest {
      */
     @Test
     fun login() = runBlocking {
-        runWithAcademicAffairsLogin {}
+        runWithAcademicAffairsLogin {
+            assertTrue { true }
+        }
     }
 
     /**
@@ -68,6 +71,20 @@ class AcademicAffairsTest {
             val timetable = academicAffairs.enrollment.getTimetable(semester)
 
             assertEquals(semester, timetable.semester)
+        }
+    }
+
+    /**
+     * 获取课程课表测试
+     */
+    @Test
+    fun getCourseTimetable() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val semester = Semester.now()
+
+            val courseTimetable = academicAffairs.enrollment.getCourseTimetable(semester)
+
+            assertEquals(semester, courseTimetable.semester)
         }
     }
 

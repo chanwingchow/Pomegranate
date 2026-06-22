@@ -5,6 +5,7 @@ import com.chow.pomegranate.service.academic.affairs.model.TimetableCourse
 import com.chow.pomegranate.service.foundation.Semester
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Element
+import com.fleeksoft.ksoup.nodes.TextNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DayOfWeek
@@ -12,125 +13,138 @@ import kotlinx.datetime.DayOfWeek
 /**
  * 课表解析器。
  */
-internal object TimetableParser {
-    /** 星期 */
-    private val dayOfWeeks = DayOfWeek.entries
+object TimetableParser {
 
-    /** 同一格子内多门课的分隔线 */
-    private val dividerRegex = Regex("-{10,}")
-
-    /** HTML 标签正则 */
-    private val tagRegex = Regex("<[^>]+>")
-
-    /** 换行标签正则 */
-    private val brRegex = Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE)
-
-    /** 节次正则，如 `[01-02]节`、`[09-10-11]节` */
-    private val sectionRegex = Regex("""\[(\d{2}(?:-\d{2})*)]节""")
-
-    /**
-     * 解析 [html] 为 [Timetable]。
-     *
-     * @param html HTML
-     * @param semester 学期
-     */
     suspend fun parse(
         html: String,
+        userId: String,
         semester: Semester,
     ): Timetable = withContext(Dispatchers.Default) {
-        val document = Ksoup.parse(html)
+        val document = Ksoup.parse(extractTableHtml(html))
 
         // #kbtable > tbody
-        val body = document.getElementById("kbtable")!!
+        val tbody = document.getElementById("kbtable")!!
             .firstElementChild()!!
 
+        // 课程
         val courses = ArrayList<TimetableCourse>(24)
-        val rowSize = body.childrenSize() - 1
 
-        // #kbtable > tbody > tr > td > div.kbcontent
-        for (rowIndex in 1 until rowSize) {
-            val tr = body.child(rowIndex)
+        val rowLastIndex = 6
+        val columnLastIndex = 7
 
-            for (columnIndex in 1 until tr.childrenSize()) {
-                // child(0) 为节次 th，child(1..7) 为星期 td；kbcontent 固定为 child(3)
+        // #kbtable > tbody > tr，跳过表头星期
+        for (rowIndex in 1..rowLastIndex) {
+            val tr = tbody.child(rowIndex)
+
+            // #kbtable > tbody > tr > td，跳过表头节次
+            for (columnIndex in 1..columnLastIndex) {
+                // #kbtable > tbody > tr > td > div.kbcontent
                 val div = tr.child(columnIndex).child(3)
 
-                if (div.text().isBlank()) continue
+                // 跳过空项
+                if (div.childrenSize() == 0) continue
 
-                courses.collectCourses(dayOfWeeks[columnIndex - 1], div)
+                courses.addAllCourses(div, dayOfWeek = DayOfWeek(columnIndex))
             }
         }
 
         return@withContext Timetable(
+            userId = userId,
             semester = semester,
             courses = courses,
-            note = body.lastElementChild()
-                ?.child(1)
-                ?.text()
-                ?.takeIf { it != "未安排时间课程：" },
+            note = tbody.lastElementChild()!!.child(1).text().takeIf { it != "未安排时间课程：" },
         )
     }
 
     /**
-     * 解析单个格子内的课程，追加到当前列表。
-     *
-     * 一格内可能有多门课，以 `---------------------` 分隔。
+     * 截取课表表格。
      */
-    private fun MutableList<TimetableCourse>.collectCourses(
+    private fun extractTableHtml(html: String): String {
+        val markerIndex = html.indexOf("id=\"kbtable\"")
+        val tableCloseTag = "</table>"
+
+        val tableOpen = html.lastIndexOf("<table", markerIndex)
+        val tableClose = html.indexOf(tableCloseTag, markerIndex)
+
+        return html.substring(tableOpen, tableClose + tableCloseTag.length)
+    }
+
+    private fun MutableList<TimetableCourse>.addAllCourses(
+        div: Element,
         dayOfWeek: DayOfWeek,
-        element: Element,
     ) {
-        val html = element.html()
-        val segments = if ("-----" in html) {
-            html.split(dividerRegex)
-        } else {
-            listOf(html)
+        var name: String? = null
+        var teacher: String? = null
+        var weeks: String? = null
+        var classroom: String? = null
+        var sections: Set<Int> = emptySet()
+
+
+        fun reset() {
+            name = null
+            teacher = null
+            weeks = null
+            classroom = null
+            sections = emptySet()
         }
-        for (raw in segments) {
-            val segment = raw.trim()
-            if (segment.isEmpty()) continue
+
+        fun flush() {
+            val courseName = name?.trim().orEmpty()
+            // 没课名、也没任何 font 信息 → 跳过（纯 br 残留等）
+            if (courseName.isEmpty() && teacher == null && weeks == null && classroom == null) {
+                reset()
+                return
+            }
             add(
                 TimetableCourse(
-                    name = getCourseName(segment),
-                    teacher = segment.font("老师"),
-                    weeks = segment.font("周次(节次)").orEmpty(),
-                    classroom = segment.font("教室"),
+                    name = courseName,
+                    teacher = teacher,
+                    weeksString = weeks.orEmpty(),
+                    classroom = classroom,
                     dayOfWeek = dayOfWeek,
-                    sections = sectionRegex.findAll(segment)
-                        .flatMap { match -> match.groupValues[1].split('-').map(String::toInt) }
-                        .toSet(),
+                    sections = sections,
                 ),
             )
+            reset()
         }
-    }
 
-    /**
-     * 按 font title 提取文本。
-     */
-    private fun String.font(title: String): String? {
-        val marker = """title="$title""""
-        val start = indexOf(marker)
-        if (start < 0) return null
-        val open = indexOf('>', start) + 1
-        val close = indexOf('<', open)
-        if (close < 0) return null
-        return substring(open, close).trim().ifEmpty { null }
-    }
+        val nodeSize = div.childNodeSize()
 
-    /**
-     * 提取课程名称。
-     *
-     * 分割后的 segment 可能以 `<br>` 开头，不能直接用 `substringBefore("<br")`。
-     */
-    private fun getCourseName(html: String): String {
-        val br = html.indexOf("<br", ignoreCase = true)
-        val head = if (br < 0) html else html.substring(0, br)
-        return head.replace(tagRegex, "").trim().ifEmpty {
-            html.replace(brRegex, "\n")
-                .replace(tagRegex, "")
-                .lineSequence()
-                .firstOrNull { it.isNotBlank() }
-                .orEmpty()
+        for (nodeIndex in 0..<nodeSize) {
+            when (val node = div.childNode(nodeIndex)) {
+                is TextNode -> {
+                    val text = node.text().trim()
+                    if (text.isEmpty()) continue
+                    // 多门课分割线
+                    if (text.all { it == '-' }) {
+                        flush()
+                        continue
+                    }
+                    // 节次：[03-04]节
+                    if (text.startsWith("[") && text.endsWith("]节")) {
+                        val raw = text.substring(1, text.length - 2) // 去掉 '[' 和 "]节"
+                        sections = raw.split('-').map { it.toInt() }.toSet()
+                        continue
+                    }
+                    // 课程名：段内第一个非空、非节次的 TextNode
+                    if (name == null) {
+                        name = text
+                    }
+                }
+
+                is Element -> {
+                    if (!node.nameIs("font")) continue
+                    val value = node.text().trim().ifEmpty { null }
+                    when (node.attr("title")) {
+                        "老师" -> teacher = value
+                        "周次(节次)" -> weeks = value.orEmpty()
+                        "教室" -> classroom = value
+                    }
+                }
+            }
         }
+
+        // 最后一门课
+        flush()
     }
 }

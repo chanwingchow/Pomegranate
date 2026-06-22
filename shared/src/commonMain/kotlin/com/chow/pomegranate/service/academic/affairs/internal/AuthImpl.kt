@@ -11,6 +11,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.parameters
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.Clock
 
 /**
@@ -18,6 +19,7 @@ import kotlin.time.Clock
  */
 internal class AuthImpl(
     private val httpClient: HttpClient,
+    private val userId: MutableStateFlow<String?>,
 ) : AcademicAffairs.Auth {
     override suspend fun getCaptcha(): ByteArray {
         val bytes = httpClient.get("/jsxsd/verifycode.servlet")
@@ -45,6 +47,7 @@ internal class AuthImpl(
 
             if (text.isEmpty()) {
                 // 登录成功
+                userId.value = param.username
                 LoginResult.Success
             } else {
                 // 解析 HTML
