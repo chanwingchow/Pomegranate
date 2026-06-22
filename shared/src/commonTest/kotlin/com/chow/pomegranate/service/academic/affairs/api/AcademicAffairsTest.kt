@@ -75,7 +75,7 @@ class AcademicAffairsTest {
     }
 
     /**
-     * 获取课程课表测试
+     * 获取课程课表测试。
      */
     @Test
     fun getCourseTimetable() = runBlocking {
@@ -85,6 +85,20 @@ class AcademicAffairsTest {
             val courseTimetable = academicAffairs.enrollment.getCourseTimetable(semester)
 
             assertEquals(semester, courseTimetable.semester)
+        }
+    }
+
+    /**
+     * 获取考试安排测试。
+     */
+    @Test
+    fun getExamSchedule() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val semester = Semester.now()
+
+            val examSchedule = academicAffairs.enrollment.getExamSchedule(semester)
+
+            assertEquals(semester, examSchedule.semester)
         }
     }
 

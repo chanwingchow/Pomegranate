@@ -2,6 +2,7 @@ package com.chow.pomegranate.service.academic.affairs.api
 
 import com.chow.pomegranate.service.academic.affairs.internal.AcademicAffairsImpl
 import com.chow.pomegranate.service.academic.affairs.model.CourseTimetable
+import com.chow.pomegranate.service.academic.affairs.model.ExamSchedule
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
 import com.chow.pomegranate.service.academic.affairs.model.Timetable
@@ -67,12 +68,23 @@ interface AcademicAffairs {
     interface Enrollment {
         /**
          * 返回课表。
+         *
+         * @param semester 学期
          */
         suspend fun getTimetable(semester: Semester): Timetable
 
         /**
          * 返回课程课表。
+         *
+         * @param semester 学期
          */
         suspend fun getCourseTimetable(semester: Semester): CourseTimetable
+
+        /**
+         * 返回考试安排。
+         *
+         * @param semester 学期
+         */
+        suspend fun getExamSchedule(semester: Semester): ExamSchedule
     }
 }

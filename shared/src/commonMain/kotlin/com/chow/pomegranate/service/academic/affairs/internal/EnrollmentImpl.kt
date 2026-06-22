@@ -2,8 +2,10 @@ package com.chow.pomegranate.service.academic.affairs.internal
 
 import com.chow.pomegranate.service.academic.affairs.api.AcademicAffairs
 import com.chow.pomegranate.service.academic.affairs.internal.parser.CourseTimetableParser
+import com.chow.pomegranate.service.academic.affairs.internal.parser.ExamScheduleParser
 import com.chow.pomegranate.service.academic.affairs.internal.parser.TimetableParser
 import com.chow.pomegranate.service.academic.affairs.model.CourseTimetable
+import com.chow.pomegranate.service.academic.affairs.model.ExamSchedule
 import com.chow.pomegranate.service.academic.affairs.model.Timetable
 import com.chow.pomegranate.service.foundation.Semester
 import io.ktor.client.HttpClient
@@ -59,5 +61,23 @@ internal class EnrollmentImpl(
         }.bodyAsText()
 
         return CourseTimetableParser.parse(html, semester)
+    }
+
+    override suspend fun getExamSchedule(semester: Semester): ExamSchedule {
+        val html = httpClient.submitForm(
+            "/jsxsd/xsks/xsksap_list",
+            parameters {
+                append("xqlbmc", "")
+                append("xnxqid", "$semester")
+                // 1: 期初；2: 期中；3: 期末
+                append("xqlb", "")
+            },
+        ).bodyAsText()
+
+        return ExamScheduleParser.parse(
+            html,
+            userId = userId.value!!,
+            semester = semester,
+        )
     }
 }

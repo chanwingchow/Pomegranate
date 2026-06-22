@@ -1,5 +1,6 @@
 package com.chow.pomegranate.service.academic.affairs.internal.parser
 
+import com.chow.pomegranate.service.academic.affairs.internal.parser.CourseTimetableParser.parseCourseCellFromHtml
 import com.chow.pomegranate.service.academic.affairs.model.CourseTimetable
 import com.chow.pomegranate.service.academic.affairs.model.TimetableCourse
 import com.chow.pomegranate.service.foundation.Semester
@@ -13,9 +14,6 @@ import kotlinx.datetime.DayOfWeek
  * 课程课表解析器。
  */
 internal object CourseTimetableParser {
-    private const val KBTABLE_MARKER = "id=\"kbtable\""
-    private const val TABLE_CLOSE = "</table>"
-
     /** 换行标签正则（仅 [parseCourseCellFromHtml] 回退路径使用） */
     private val brRegex = Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE)
 
@@ -35,7 +33,7 @@ internal object CourseTimetableParser {
         html: String,
         semester: Semester,
     ): CourseTimetable = withContext(Dispatchers.Default) {
-        val document = Ksoup.parse(extractTableHtml(html))
+        val document = Ksoup.parse(extractTableHtml(html, id = "kbtable"))
 
         // #kbtable > tbody
         val body = document.getElementById("kbtable")!!
@@ -80,19 +78,6 @@ internal object CourseTimetableParser {
             semester = semester,
             courses = courses,
         )
-    }
-
-    /**
-     * 截取课表表格。
-     */
-    private fun extractTableHtml(html: String): String {
-        val markerIndex = html.indexOf("id=\"kbtable\"")
-        val tableCloseTag = "</table>"
-
-        val tableOpen = html.lastIndexOf("<table", markerIndex)
-        val tableClose = html.indexOf(tableCloseTag, markerIndex)
-
-        return html.substring(tableOpen, tableClose + tableCloseTag.length)
     }
 
     /**

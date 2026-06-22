@@ -13,14 +13,20 @@ import kotlinx.datetime.DayOfWeek
 /**
  * 课表解析器。
  */
-object TimetableParser {
-
+internal object TimetableParser {
+    /**
+     * 解析 [html] 为 [Timetable]。
+     *
+     * @param html HTML
+     * @param userId 学号
+     * @param semester 学期
+     */
     suspend fun parse(
         html: String,
         userId: String,
         semester: Semester,
     ): Timetable = withContext(Dispatchers.Default) {
-        val document = Ksoup.parse(extractTableHtml(html))
+        val document = Ksoup.parse(extractTableHtml(html, id = "kbtable"))
 
         // #kbtable > tbody
         val tbody = document.getElementById("kbtable")!!
@@ -54,19 +60,6 @@ object TimetableParser {
             courses = courses,
             note = tbody.lastElementChild()!!.child(1).text().takeIf { it != "未安排时间课程：" },
         )
-    }
-
-    /**
-     * 截取课表表格。
-     */
-    private fun extractTableHtml(html: String): String {
-        val markerIndex = html.indexOf("id=\"kbtable\"")
-        val tableCloseTag = "</table>"
-
-        val tableOpen = html.lastIndexOf("<table", markerIndex)
-        val tableClose = html.indexOf(tableCloseTag, markerIndex)
-
-        return html.substring(tableOpen, tableClose + tableCloseTag.length)
     }
 
     private fun MutableList<TimetableCourse>.addAllCourses(
