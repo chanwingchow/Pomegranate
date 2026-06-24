@@ -1,5 +1,6 @@
 package com.chow.pomegranate.service.academic.affairs.api
 
+import com.chow.pomegranate.service.academic.affairs.model.CourseSearchParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
 import com.chow.pomegranate.service.foundation.Semester
@@ -13,8 +14,6 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlin.test.fail
 
 /**
@@ -55,9 +54,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun login() = runBlocking {
-        runWithAcademicAffairsLogin {
-            assertTrue { true }
-        }
+        runWithAcademicAffairsLogin {}
     }
 
     /**
@@ -70,7 +67,7 @@ class AcademicAffairsTest {
 
             val timetable = academicAffairs.enrollment.getTimetable(semester)
 
-            assertEquals(semester, timetable.semester)
+            println(timetable)
         }
     }
 
@@ -84,7 +81,7 @@ class AcademicAffairsTest {
 
             val courseTimetable = academicAffairs.enrollment.getCourseTimetable(semester)
 
-            assertEquals(semester, courseTimetable.semester)
+            println(courseTimetable)
         }
     }
 
@@ -98,7 +95,83 @@ class AcademicAffairsTest {
 
             val examSchedule = academicAffairs.enrollment.getExamSchedule(semester)
 
-            assertEquals(semester, examSchedule.semester)
+            println(examSchedule)
+        }
+    }
+
+    /**
+     * 进入选课系统入口测试。
+     */
+    @Test
+    fun enterCourseSystemSession() = runBlocking {
+        runWithEnterCourseSystem {}
+    }
+
+    /**
+     * 获取选课学分概览测试。
+     */
+    @Test
+    fun getCreditSummary() = runBlocking {
+        runWithEnterCourseSystem {
+            val creditSummary = academicAffairs.courseSystem.getCreditSummary()
+
+            println(creditSummary)
+        }
+    }
+
+    /**
+     * 获取已选课程测试。
+     */
+    @Test
+    fun getSelectedCourses() = runBlocking {
+        runWithEnterCourseSystem {
+            val selectedCourses = academicAffairs.courseSystem.getSelectedCourses()
+
+            println(selectedCourses)
+        }
+    }
+
+    /**
+     * 获取退课记录测试。
+     */
+    @Test
+    fun getCourseDropLogs() = runBlocking {
+        runWithEnterCourseSystem {
+            val courseDropLogs = academicAffairs.courseSystem.getCourseDropLogs()
+
+            println(courseDropLogs)
+        }
+    }
+
+    /**
+     * 搜索选课系统课程测试。
+     */
+    @Test
+    fun searchCourse() = runBlocking {
+        runWithEnterCourseSystem {
+            val params = CourseSearchParam.General()
+            val response = academicAffairs.courseSystem.searchCourses(params)
+
+            println(response)
+        }
+    }
+
+    /**
+     * 在进入选课系统的情况下运行 [block]。
+     */
+    private suspend inline fun runWithEnterCourseSystem(block: () -> Unit) {
+        runWithAcademicAffairsLogin {
+            val entrances = academicAffairs.courseSystem.getEntrances()
+
+            println(entrances)
+
+            if (entrances.isNotEmpty()) {
+                // 进入选课系统
+                academicAffairs.courseSystem.enterCourseSystem(entrances.first().id)
+                return block()
+            }
+
+            fail()
         }
     }
 

@@ -1,32 +1,32 @@
 [versions]
 agp = "9.1.1"
-android-compileSdk = "36"
+android-compileSdk = "37"
 android-minSdk = "30"
 android-targetSdk = "37"
 versionName = "1.0.0"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.7.1"
-androidx-core = "1.18.0"
+androidx-core = "1.19.0"
 androidx-espresso = "3.7.0"
-androidx-lifecycle = "2.11.0-beta01"
+androidx-lifecycle = "2.11.0-beta02"
 androidx-testExt = "1.3.0"
 composeHotReload = "1.1.1"
-composeMultiplatform = "1.11.0"
+composeMultiplatform = "1.11.1"
 junit = "4.13.2"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 kotlinx-coroutines = "1.11.0"
 material3 = "1.11.0-alpha07"
 
 # DateTime
-kotlinx-datetime = "0.8.0-rc02"
+kotlinx-datetime = "0.8.0"
 # Network
 ktor = "3.5.0"
 # Tooling
-buildkonfig = "0.21.2"
+buildkonfig = "0.22.0"
 # UI
-adaptive = "1.3.0-beta01"
-cloudy = "0.5.0"
-coil3 = "3.4.0"
+adaptive = "1.3.0-beta02"
+cloudy = "0.6.0"
+coil3 = "3.5.0"
 compose-shimmer = "1.5.0-beta02"
 liquid = "1.1.1"
 material-icons = "1.7.3"
@@ -37,7 +37,7 @@ koltinx-io = "0.9.0"
 ksoup = "0.2.6"
 moonKmp = "1.0.0"
 tess4Android = "4.9.0"
-tess4j = "5.18.0"
+tess4j = "5.19.0"
 
 
 [libraries]
@@ -66,6 +66,8 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module ="io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 # UI
 adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
 adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "adaptive" }
@@ -94,6 +96,8 @@ datetime = [
 ]
 network = [
     "ktor-client-core",
+    "ktor-client-content-negotiation",
+    "ktor-serialization-kotlinx-json",
 ]
 ui = [
     "adaptive",

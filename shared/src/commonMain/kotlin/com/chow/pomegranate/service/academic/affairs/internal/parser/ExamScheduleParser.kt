@@ -50,7 +50,7 @@ internal object ExamScheduleParser {
 
         val rowLastIndex = tbody.childrenSize() - 1
 
-        // #kbtable > tbody > tr，跳过表头
+        // #dataList > tbody > tr，跳过表头
         for (rowIndex in 1..rowLastIndex) {
             // #dataList > tbody > tr
             val tr = tbody.child(rowIndex)

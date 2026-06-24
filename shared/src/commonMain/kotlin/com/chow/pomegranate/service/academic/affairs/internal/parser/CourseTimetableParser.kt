@@ -43,8 +43,10 @@ internal object CourseTimetableParser {
         val slotCount = slots.size
         val courses = ArrayList<TimetableCourse>(8192)
 
+        val rowLastIndex = body.childrenSize() - 1
+
         // 行 0、1 为表头，行 2 起为课程行
-        for (rowIndex in 2 until body.childrenSize()) {
+        for (rowIndex in 2..rowLastIndex) {
             val tr = body.child(rowIndex)
             if (tr.childrenSize() < 1 + slotCount) continue
 
@@ -61,6 +63,7 @@ internal object CourseTimetableParser {
                 val slot = slots[slotIndex]
                 for (div in divs) {
                     val cellContent = parseCourseCell(div) ?: continue
+
                     courses += TimetableCourse(
                         name = name,
                         teacher = cellContent.teacher,
