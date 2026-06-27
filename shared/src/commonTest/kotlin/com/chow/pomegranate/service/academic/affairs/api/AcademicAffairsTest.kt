@@ -100,6 +100,85 @@ class AcademicAffairsTest {
     }
 
     /**
+     * 获取课程成绩测试。
+     */
+    @Test
+    fun getCourseTranscript() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val courseTranscript = academicAffairs.enrollment.getCourseTranscript()
+
+            println(courseTranscript)
+        }
+    }
+
+    /**
+     * 获取等级考试成绩测试。
+     */
+    @Test
+    fun getLevelTranscript() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val levelTranscript = academicAffairs.enrollment.getLevelTranscript()
+
+            println(levelTranscript)
+        }
+    }
+
+    /**
+     * 获取免听申请测试。
+     */
+    @Test
+    fun getExemption() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val semester = Semester.now()
+
+            val exemption = academicAffairs.enrollment.getExemption(semester)
+
+            println(exemption)
+        }
+    }
+
+    /**
+     * 获取校历测试。
+     */
+    @Test
+    fun getCampusCalendar() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val semester = Semester.now()
+
+            val campusCalendar = academicAffairs.enrollment.getCampusCalendar(semester)
+
+            println(campusCalendar)
+        }
+    }
+
+    /**
+     * 获取教师列表测试。
+     */
+    @Test
+    fun getTeachers() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val teachers = academicAffairs.enrollment.getTeachers()
+
+            println(teachers)
+        }
+    }
+
+    /**
+     * 获取教师测试。
+     */
+    @Test
+    fun getTeacher() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val teachers = academicAffairs.enrollment.getTeachers()
+            val id = teachers.items.first().id
+
+            val teacher = academicAffairs.enrollment.getTeacher(id)
+
+            println(teacher)
+        }
+    }
+
+    /**
      * 获取学业计划测试。
      */
     @Test

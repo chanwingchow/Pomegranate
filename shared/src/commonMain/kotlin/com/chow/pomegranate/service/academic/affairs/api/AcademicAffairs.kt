@@ -5,6 +5,7 @@ import com.chow.pomegranate.service.academic.affairs.model.AcademicAlert
 import com.chow.pomegranate.service.academic.affairs.model.AcademicPlan
 import com.chow.pomegranate.service.academic.affairs.model.AcademicProgram
 import com.chow.pomegranate.service.academic.affairs.model.AcademicProgress
+import com.chow.pomegranate.service.academic.affairs.model.CampusCalendar
 import com.chow.pomegranate.service.academic.affairs.model.CourseDropLog
 import com.chow.pomegranate.service.academic.affairs.model.CourseSearchParam
 import com.chow.pomegranate.service.academic.affairs.model.CourseSearchResponse
@@ -12,12 +13,17 @@ import com.chow.pomegranate.service.academic.affairs.model.CourseSelectCategory
 import com.chow.pomegranate.service.academic.affairs.model.CourseSelectPriority
 import com.chow.pomegranate.service.academic.affairs.model.CourseSystemEntrance
 import com.chow.pomegranate.service.academic.affairs.model.CourseTimetable
+import com.chow.pomegranate.service.academic.affairs.model.CourseTranscript
 import com.chow.pomegranate.service.academic.affairs.model.CreditSummary
 import com.chow.pomegranate.service.academic.affairs.model.ExamSchedule
+import com.chow.pomegranate.service.academic.affairs.model.Exemption
 import com.chow.pomegranate.service.academic.affairs.model.GraduationAudit
+import com.chow.pomegranate.service.academic.affairs.model.LevelTranscript
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
 import com.chow.pomegranate.service.academic.affairs.model.SelectedCourse
+import com.chow.pomegranate.service.academic.affairs.model.Teacher
+import com.chow.pomegranate.service.academic.affairs.model.Teachers
 import com.chow.pomegranate.service.academic.affairs.model.Timetable
 import com.chow.pomegranate.service.foundation.Semester
 import io.ktor.client.HttpClient
@@ -122,6 +128,40 @@ interface AcademicAffairs {
          * @param semester 学期
          */
         suspend fun getExamSchedule(semester: Semester): ExamSchedule
+
+        /**
+         * 返回课程成绩。
+         */
+        suspend fun getCourseTranscript(): CourseTranscript
+
+        /**
+         * 返回等级考试成绩。
+         */
+        suspend fun getLevelTranscript(): LevelTranscript
+
+        /**
+         * 返回免听申请。
+         *
+         * @param semester 学期
+         */
+        suspend fun getExemption(semester: Semester): Exemption
+
+        /**
+         * 返回校历。
+         *
+         * @param semester 学期
+         */
+        suspend fun getCampusCalendar(semester: Semester): CampusCalendar
+
+        /**
+         * 返回教师列表。
+         */
+        suspend fun getTeachers(query: String = "", pageIndex: Int = 1): Teachers
+
+        /**
+         * 返回教师。
+         */
+        suspend fun getTeacher(id: String): Teacher
     }
 
     /**
