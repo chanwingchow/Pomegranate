@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 /**
  * 退课记录解析器。
  */
-object CourseDropLogsParser {
+internal object CourseDropLogsParser {
     /**
      * 解析 [html] 为 [List]<[CourseDropLog]>。
      *
@@ -33,7 +33,7 @@ object CourseDropLogsParser {
             logs += CourseDropLog(
                 courseId = tr.child(0).text(),
                 courseName = tr.child(1).text(),
-                credits = tr.child(2).text(),
+                credits = tr.child(2).text().toDouble(),
                 courseAttribute = tr.child(3).text(),
                 teacher = tr.child(4).text(),
                 schedule = tr.child(5).run {

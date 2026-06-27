@@ -22,6 +22,11 @@ internal class AcademicAffairsImpl(
         userId = userId,
     )
 
+    override val academic: AcademicAffairs.Academic = AcademicImpl(
+        httpClient,
+        userId = userId,
+    )
+
     override val courseSystem: AcademicAffairs.CourseSystem = CourseSystemImpl(
         httpClient,
         userId = userId,

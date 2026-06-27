@@ -100,6 +100,66 @@ class AcademicAffairsTest {
     }
 
     /**
+     * 获取学业计划测试。
+     */
+    @Test
+    fun getAcademicPlan() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val academicPlan = academicAffairs.academic.getAcademicPlan()
+
+            println(academicPlan)
+        }
+    }
+
+    /**
+     * 获取学业进度测试。
+     */
+    @Test
+    fun getAcademicProgress() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val academicProgress = academicAffairs.academic.getAcademicProgress()
+
+            println(academicProgress)
+        }
+    }
+
+    /**
+     * 获取学业预警测试。
+     */
+    @Test
+    fun getAcademicAlert() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val academicAlert = academicAffairs.academic.getAcademicAlert()
+
+            println(academicAlert)
+        }
+    }
+
+    /**
+     * 获取培养方案测试。
+     */
+    @Test
+    fun getAcademicProgram() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val academicProgram = academicAffairs.academic.getAcademicProgram()
+
+            println(academicProgram)
+        }
+    }
+
+    /**
+     * 获取毕业审核测试。
+     */
+    @Test
+    fun getGraduationAudit() = runBlocking {
+        runWithAcademicAffairsLogin {
+            val graduationAudit = academicAffairs.academic.getGraduationAudit()
+
+            println(graduationAudit)
+        }
+    }
+
+    /**
      * 进入选课系统入口测试。
      */
     @Test

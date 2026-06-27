@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 /**
  * 选课学分概览解析器。
  */
-object CreditSummaryParser {
+internal object CreditSummaryParser {
     /**
      * 解析 [html] 为 [CreditSummary]。
      *

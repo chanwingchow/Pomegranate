@@ -18,7 +18,7 @@ package com.chow.pomegranate.service.academic.affairs.model
 data class CourseDropLog(
     val courseId: String,
     val courseName: String,
-    val credits: String,
+    val credits: Double,
     val courseAttribute: String,
     val teacher: String,
     val schedule: List<String>,

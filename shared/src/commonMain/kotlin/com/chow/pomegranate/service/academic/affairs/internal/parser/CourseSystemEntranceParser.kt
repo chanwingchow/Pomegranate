@@ -13,7 +13,7 @@ import kotlinx.datetime.format.char
 /**
  * 选课系统入口解析器。
  */
-object CourseSystemEntranceParser {
+internal object CourseSystemEntranceParser {
     private val dateTimeFormat by lazy {
         // yyyy-MM-dd HH:mm
         Format {

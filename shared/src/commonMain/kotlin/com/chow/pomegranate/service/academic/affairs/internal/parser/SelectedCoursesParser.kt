@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 /**
  * 已选课程解析器。
  */
-object SelectedCoursesParser {
+internal object SelectedCoursesParser {
     /**
      * 解析 [html] 为 [List]<[SelectedCourse]>。
      *
@@ -27,7 +27,7 @@ object SelectedCoursesParser {
 
         val rowLastIndex = tbody.childrenSize() - 1
 
-        // table > tbody > tr
+        // table > tbody > tr，跳过表头
         for (rowIndex in 1..rowLastIndex) {
             val tr = tbody.child(rowIndex)
 
@@ -35,7 +35,7 @@ object SelectedCoursesParser {
                 id = URLBuilder(tr.child(8).child(0).attr("href")).parameters["jx0404id"]!!,
                 courseId = tr.child(0).text(),
                 name = tr.child(1).text(),
-                credits = tr.child(2).text(),
+                credits = tr.child(2).text().toDouble(),
                 attribute = tr.child(3).text(),
                 teacher = tr.child(4).text(),
                 timeString = tr.child(5).text().takeIf { it.isNotEmpty() },

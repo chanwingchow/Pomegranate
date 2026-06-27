@@ -1,6 +1,10 @@
 package com.chow.pomegranate.service.academic.affairs.api
 
 import com.chow.pomegranate.service.academic.affairs.internal.AcademicAffairsImpl
+import com.chow.pomegranate.service.academic.affairs.model.AcademicAlert
+import com.chow.pomegranate.service.academic.affairs.model.AcademicPlan
+import com.chow.pomegranate.service.academic.affairs.model.AcademicProgram
+import com.chow.pomegranate.service.academic.affairs.model.AcademicProgress
 import com.chow.pomegranate.service.academic.affairs.model.CourseDropLog
 import com.chow.pomegranate.service.academic.affairs.model.CourseSearchParam
 import com.chow.pomegranate.service.academic.affairs.model.CourseSearchResponse
@@ -10,6 +14,7 @@ import com.chow.pomegranate.service.academic.affairs.model.CourseSystemEntrance
 import com.chow.pomegranate.service.academic.affairs.model.CourseTimetable
 import com.chow.pomegranate.service.academic.affairs.model.CreditSummary
 import com.chow.pomegranate.service.academic.affairs.model.ExamSchedule
+import com.chow.pomegranate.service.academic.affairs.model.GraduationAudit
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
 import com.chow.pomegranate.service.academic.affairs.model.SelectedCourse
@@ -65,6 +70,9 @@ interface AcademicAffairs {
     /** 课程模块 */
     val enrollment: Enrollment
 
+    /** 学业模块 */
+    val academic: Academic
+
     /** 选课系统模块 */
     val courseSystem: CourseSystem
 
@@ -114,6 +122,43 @@ interface AcademicAffairs {
          * @param semester 学期
          */
         suspend fun getExamSchedule(semester: Semester): ExamSchedule
+    }
+
+    /**
+     * 学业模块。
+     */
+    interface Academic {
+        /**
+         * 返回学业计划。
+         */
+        suspend fun getAcademicPlan(): AcademicPlan
+
+        /**
+         * 返回学业进度。
+         *
+         * @param isPrimary 是否为主修
+         */
+        suspend fun getAcademicProgress(isPrimary: Boolean = true): AcademicProgress
+
+        /**
+         * 返回学业预警。
+         */
+        suspend fun getAcademicAlert(pageIndex: Int = 1): AcademicAlert
+
+        /**
+         * 返回培养方案。
+         */
+        suspend fun getAcademicProgram(): AcademicProgram
+
+        /**
+         * 返回毕业审核。
+         */
+        suspend fun getGraduationAudit(isPrimary: Boolean = true): GraduationAudit
+
+        /**
+         * 返回毕业审核报告。
+         */
+        suspend fun getGraduationAuditReport(urlString: String): ByteArray
     }
 
     /**

@@ -18,7 +18,7 @@ data class SelectedCourse(
     val id: String,
     val courseId: String,
     val name: String,
-    val credits: String,
+    val credits: Double,
     val attribute: String,
     val teacher: String,
     val timeString: String?,
