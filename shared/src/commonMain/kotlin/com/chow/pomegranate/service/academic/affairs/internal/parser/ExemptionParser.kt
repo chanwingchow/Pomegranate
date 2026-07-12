@@ -47,7 +47,7 @@ internal object ExemptionParser {
                 courseName = tr.child(3).text(),
                 department = tr.child(4).text(),
                 teacher = tr.child(5).text(),
-                hours = tr.child(6).text().toInt(),
+                hours = tr.child(6).text().toDouble(),
                 credits = tr.child(7).text().toDouble(),
                 assessment = tr.child(8).text(),
                 reason = tr.child(9).text().ifBlank { null },

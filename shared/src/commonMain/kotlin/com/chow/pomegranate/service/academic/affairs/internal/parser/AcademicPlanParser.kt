@@ -43,7 +43,7 @@ internal object AcademicPlanParser {
                 name = tr.child(3).text(),
                 department = tr.child(4).text(),
                 credits = tr.child(5).text().toDouble(),
-                hours = tr.child(6).text().toInt(),
+                hours = tr.child(6).text().toDouble(),
                 assessment = tr.child(7).text(),
                 attribute = tr.child(8).text(),
                 isExamAssessed = tr.child(9).text() == "是",

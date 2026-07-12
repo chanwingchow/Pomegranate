@@ -44,7 +44,7 @@ data class CourseGrade(
     val finalScore: String?,
     val score: String,
     val credits: Double,
-    val hours: Int,
+    val hours: Double,
     val assessment: String,
     val attribute: String,
     val category: String,

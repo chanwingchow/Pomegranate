@@ -36,7 +36,7 @@ data class ExemptionItem(
     val courseName: String,
     val department: String,
     val teacher: String,
-    val hours: Int,
+    val hours: Double,
     val credits: Double,
     val assessment: String,
     val reason: String?,

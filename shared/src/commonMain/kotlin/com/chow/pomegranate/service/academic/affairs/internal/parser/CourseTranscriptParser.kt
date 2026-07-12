@@ -44,7 +44,7 @@ internal object CourseTranscriptParser {
                 finalScore = tr.child(6).text().ifBlank { null },
                 score = tr.child(7).text(),
                 credits = tr.child(8).text().toDouble(),
-                hours = tr.child(9).text().toInt(),
+                hours = tr.child(9).text().toDouble(),
                 assessment = tr.child(10).text(),
                 attribute = tr.child(11).text(),
                 category = tr.child(12).text(),

@@ -32,7 +32,7 @@ data class PlannedCourse(
     val name: String,
     val department: String,
     val credits: Double,
-    val hours: Int,
+    val hours: Double,
     val assessment: String,
     val attribute: String,
     val isExamAssessed: Boolean,
