@@ -2,7 +2,9 @@ package com.chow.pomegranate.service.academic.affairs.internal.parser
 
 import com.chow.pomegranate.service.academic.affairs.model.GraduationAudit
 import com.chow.pomegranate.service.academic.affairs.model.GraduationAuditItem
+import com.chow.pomegranate.service.shared.resolveUrl
 import com.fleeksoft.ksoup.Ksoup
+import io.ktor.http.Url
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -22,6 +24,7 @@ internal object GraduationAuditParser {
     suspend fun parse(
         html: String,
         userId: String,
+        lazyRequestUrl: () -> Url,
     ): GraduationAudit = withContext(Dispatchers.Default) {
         val document = Ksoup.parse(html)
 
@@ -39,6 +42,9 @@ internal object GraduationAuditParser {
         for (rowIndex in 1..rowLastIndex) {
             val tr = tbody.child(rowIndex)
 
+            val urlString = insetJavaScriptUrlRegex.find(tr.child(8).child(0).attr("href"))!!
+                .groupValues[1]
+
             items += GraduationAuditItem(
                 year = tr.child(0).text(),
                 batchName = tr.child(1).text(),
@@ -48,8 +54,7 @@ internal object GraduationAuditParser {
                 completionRate = tr.child(5).text(),
                 enrollmentRate = tr.child(6).text(),
                 note = tr.child(7).text().ifBlank { null },
-                reportUrl = insetJavaScriptUrlRegex.find(tr.child(8).child(0).attr("href"))!!
-                    .groupValues[1],
+                reportUrlString = resolveUrl(urlString, lazyRequestUrl = lazyRequestUrl),
             )
         }
 

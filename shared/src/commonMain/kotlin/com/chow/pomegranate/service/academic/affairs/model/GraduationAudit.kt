@@ -22,7 +22,7 @@ data class GraduationAudit(
  * @property completionRate 结业学分比率
  * @property enrollmentRate 报名学分比率
  * @property note 备注
- * @property reportUrl 毕业审核报告文档 URL
+ * @property reportUrlString 毕业审核报告文档 URL
  */
 data class GraduationAuditItem(
     val year: String,
@@ -33,5 +33,5 @@ data class GraduationAuditItem(
     val completionRate: String,
     val enrollmentRate: String,
     val note: String?,
-    val reportUrl: String,
+    val reportUrlString: String,
 )

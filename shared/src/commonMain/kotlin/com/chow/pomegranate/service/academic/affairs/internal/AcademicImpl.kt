@@ -19,6 +19,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readRawBytes
+import io.ktor.client.statement.request
 import io.ktor.http.parameters
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -82,14 +83,17 @@ internal class AcademicImpl(
 
         val batch = batches[if (isPrimary) 1 else 0]
 
-        val html = httpClient.submitForm(
+        val response = httpClient.submitForm(
             "/jsxsd/bygl/bybmcz.do",
             parameters {
                 append("bybm", batch.id)
             },
-        ).bodyAsText()
+        )
+        val html = response.bodyAsText()
 
-        return GraduationAuditParser.parse(html, userId = userId.value!!)
+        return GraduationAuditParser.parse(html, userId = userId.value!!) {
+            response.request.url
+        }
     }
 
     override suspend fun getGraduationAuditReport(urlString: String): ByteArray {

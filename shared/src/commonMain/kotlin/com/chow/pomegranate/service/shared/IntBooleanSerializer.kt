@@ -13,7 +13,7 @@ import kotlinx.serialization.json.intOrNull
 /**
  * 数字布尔值系列化器。
  */
-object IntBooleanSerializer : KSerializer<Boolean> {
+internal object IntBooleanSerializer : KSerializer<Boolean> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("IntBoolean", PrimitiveKind.BOOLEAN)
 
