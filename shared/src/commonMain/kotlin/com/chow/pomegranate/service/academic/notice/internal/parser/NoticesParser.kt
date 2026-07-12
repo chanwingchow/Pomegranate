@@ -1,7 +1,7 @@
 package com.chow.pomegranate.service.academic.notice.internal.parser
 
 import com.chow.pomegranate.service.academic.notice.model.BasicNotice
-import com.chow.pomegranate.service.shared.resolveUrl
+import com.chow.pomegranate.service.utils.resolveUrl
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.select.Evaluator
 import io.ktor.http.Url
@@ -12,6 +12,12 @@ import kotlinx.coroutines.withContext
  * 教务通知列表解析器。
  */
 internal object NoticesParser {
+    /**
+     * 将 [html] 解析为 [List]<[BasicNotice]>。
+     *
+     * @param html HTML
+     * @param lazyRequestUrl 懒加载请求 URL
+     */
     suspend fun parse(
         html: String,
         lazyRequestUrl: () -> Url,

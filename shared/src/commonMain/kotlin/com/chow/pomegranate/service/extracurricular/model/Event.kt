@@ -1,6 +1,6 @@
 package com.chow.pomegranate.service.extracurricular.model
 
-import com.chow.pomegranate.service.shared.IntBooleanSerializer
+import com.chow.pomegranate.service.utils.IntBooleanSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

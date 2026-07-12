@@ -1,4 +1,4 @@
-package com.chow.pomegranate.service.shared
+package com.chow.pomegranate.service.utils
 
 import io.ktor.http.Url
 

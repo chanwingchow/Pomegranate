@@ -2,7 +2,7 @@ package com.chow.pomegranate.service.academic.affairs.internal.parser
 
 import com.chow.pomegranate.service.academic.affairs.model.GraduationAudit
 import com.chow.pomegranate.service.academic.affairs.model.GraduationAuditItem
-import com.chow.pomegranate.service.shared.resolveUrl
+import com.chow.pomegranate.service.utils.resolveUrl
 import com.fleeksoft.ksoup.Ksoup
 import io.ktor.http.Url
 import kotlinx.coroutines.Dispatchers

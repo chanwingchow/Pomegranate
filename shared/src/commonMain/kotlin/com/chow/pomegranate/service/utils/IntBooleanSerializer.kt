@@ -1,4 +1,4 @@
-package com.chow.pomegranate.service.shared
+package com.chow.pomegranate.service.utils
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
