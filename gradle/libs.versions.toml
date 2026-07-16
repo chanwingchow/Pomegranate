@@ -31,7 +31,7 @@ compose-shimmer = "1.5.0"
 liquid = "1.1.1"
 material-icons = "1.7.3"
 materialKolor = "5.0.0"
-navigation3 = "1.2.0-alpha04"
+navigation3 = "1.2.0-alpha02"
 # Utils
 koltinx-io = "0.9.1"
 ksoup = "0.2.6"
