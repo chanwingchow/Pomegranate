@@ -26,4 +26,9 @@ interface CET {
      * 返回 CET 考试安排。
      */
     suspend fun getExamSchedule(): CetExam
+
+    /**
+     * 返回 CET 考试安排 PDF 内容。
+     */
+    suspend fun getExamSchedulePdf(urlString: String): ByteArray
 }

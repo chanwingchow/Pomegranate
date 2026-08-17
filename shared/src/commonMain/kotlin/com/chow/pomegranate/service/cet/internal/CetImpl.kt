@@ -6,6 +6,7 @@ import com.chow.pomegranate.service.cet.model.CetExam
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.readRawBytes
 import io.ktor.client.statement.request
 
 /**
@@ -19,5 +20,9 @@ internal class CetImpl(
         val html = response.bodyAsText()
 
         return CetExamParser.parse(html, response.request.url)
+    }
+
+    override suspend fun getExamSchedulePdf(urlString: String): ByteArray {
+        return httpClient.get(urlString).readRawBytes()
     }
 }

@@ -10,4 +10,4 @@ import io.ktor.client.HttpClientConfig
  *
  * @param block 客户端配置
  */
-expect fun unsafeSslHttpClient(block: HttpClientConfig<*>.() -> Unit): HttpClient
+expect fun unsafeSslHttpClient(block: HttpClientConfig<*>.() -> Unit = {}): HttpClient

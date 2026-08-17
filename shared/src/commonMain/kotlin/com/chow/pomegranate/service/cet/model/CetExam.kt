@@ -7,10 +7,10 @@ import kotlinx.datetime.format.AmPmMarker
  * CET 考试。
  *
  * @property name 考试名称
- * @property cet4Written 英语四级笔试时间
- * @property cet6Written 英语六级笔试时间
- * @property cet4Speaking 英语四级口语时间
- * @property cet6Speaking 英语六级口语时间
+ * @property cet4Written 英语四级笔试
+ * @property cet6Written 英语六级笔试
+ * @property cet4Speaking 英语四级口语
+ * @property cet6Speaking 英语六级口语
  * @property note 备注
  * @property pdfUrlString PDF URL
  */

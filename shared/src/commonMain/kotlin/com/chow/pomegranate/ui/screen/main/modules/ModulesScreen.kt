@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.cet.CetRoute
 import com.chow.pomegranate.ui.screen.contact.ContactRoute
 import com.chow.pomegranate.ui.screen.notice.NoticeRoute
 import com.chow.pomegranate.ui.screen.otp.OtpRoute
@@ -79,6 +80,7 @@ private fun ModulesContent(
                             Module.EmergencyContact -> backStack.add(ContactRoute)
                             Module.AcademicNotice -> backStack.add(NoticeRoute)
                             Module.UsefulWebsites -> backStack.add(WebsitesRoute)
+                            Module.CET -> backStack.add(CetRoute)
                         }
                     },
                     headlineContent = {

@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.composeHotReload)
 
     alias(libs.plugins.buildkonfig)
+    alias(libs.plugins.koinCompiler)
     alias(libs.plugins.kotlinSerialization)
 }
 
@@ -39,6 +40,8 @@ kotlin {
 
     jvm()
 
+    compilerOptions.freeCompilerArgs = listOf("-XXLanguage:+ExplicitBackingFields")
+
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     dependencies {
         implementation(libs.compose.runtime)
@@ -53,10 +56,13 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.tess4Android)
         }
         commonMain.dependencies {
+            implementation(project.dependencies.platform(libs.koin.bom))
+
             implementation(libs.bundles.datetime)
             implementation(libs.bundles.network)
             implementation(libs.bundles.ui)

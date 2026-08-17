@@ -2,6 +2,8 @@
     <string name="app_name">小石榴</string>
     <string name="app_poem">人生若只如初见，何事秋风悲画扇。</string>
 
+    <string name="error">错误</string>
+
     <!-- 主页 -->
     <string name="timetable">课表</string>
     <string name="modules">模块</string>
@@ -23,6 +25,7 @@
     <string name="emergency_contact">紧急电话</string>
     <string name="academic_notice">教学通知</string>
     <string name="useful_websites">常用网站</string>
+    <string name="cet">四六级</string>
 
     <!-- 我的页 -->
     <string name="avatar">头像</string>
@@ -85,4 +88,10 @@
     <string name="gdufe_blackboard">毕博平台</string>
     <string name="gdufe_name">广财通</string>
     <string name="open_in_browser">在浏览器打开</string>
+
+    <!-- CET 页 -->
+    <string name="overview">概览</string>
+    <string name="details">详情</string>
+    <string name="morning">上午</string>
+    <string name="afternoon">下午</string>
 </resources>

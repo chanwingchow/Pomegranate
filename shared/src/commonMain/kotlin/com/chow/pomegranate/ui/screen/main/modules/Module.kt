@@ -4,14 +4,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Phone
 import androidx.compose.material.icons.twotone.Security
+import androidx.compose.material.icons.twotone.Verified
 import androidx.compose.material.icons.twotone.Web
 import androidx.compose.ui.graphics.vector.ImageVector
-import org.jetbrains.compose.resources.StringResource
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.academic_notice
+import com.chow.pomegranate.cet
 import com.chow.pomegranate.emergency_contact
 import com.chow.pomegranate.otp
 import com.chow.pomegranate.useful_websites
+import org.jetbrains.compose.resources.StringResource
 
 /**
  * 模块。
@@ -45,5 +47,11 @@ enum class Module(
     UsefulWebsites(
         label = Res.string.useful_websites,
         icon = Icons.TwoTone.Web,
+    ),
+
+    /** CET */
+    CET(
+        label = Res.string.cet,
+        icon = Icons.TwoTone.Verified,
     )
 }
