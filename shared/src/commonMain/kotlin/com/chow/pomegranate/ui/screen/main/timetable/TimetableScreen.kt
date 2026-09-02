@@ -44,7 +44,7 @@ import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.app_name
-import com.chow.pomegranate.days_of_week
+import com.chow.pomegranate.days_of_week_abbr
 
 /**
  * 课表页路由。
@@ -215,7 +215,7 @@ private fun TopBar(
 private fun DaysOfWeekRow(
     modifier: Modifier = Modifier,
 ) {
-    val dayOfWeeks = stringArrayResource(Res.array.days_of_week)
+    val dayOfWeeks = stringArrayResource(Res.array.days_of_week_abbr)
 
     Row(
         modifier = modifier,

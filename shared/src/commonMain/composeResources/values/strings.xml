@@ -10,7 +10,7 @@
     <string name="me">我</string>
 
     <!-- 课表页 -->
-    <string-array name="days_of_week">
+    <string-array name="days_of_week_abbr">
         <item>一</item>
         <item>二</item>
         <item>三</item>
@@ -25,6 +25,7 @@
     <string name="emergency_contact">紧急电话</string>
     <string name="academic_notice">教学通知</string>
     <string name="useful_websites">常用网站</string>
+    <string name="exam_schedule">考试安排</string>
     <string name="cet">四六级</string>
 
     <!-- 我的页 -->
@@ -88,6 +89,20 @@
     <string name="gdufe_blackboard">毕博平台</string>
     <string name="gdufe_name">广财通</string>
     <string name="open_in_browser">在浏览器打开</string>
+
+    <!-- 考试安排页 -->
+    <string-array name="days_of_week">
+        <item>星期一</item>
+        <item>星期二</item>
+        <item>星期三</item>
+        <item>星期四</item>
+        <item>星期五</item>
+        <item>星期六</item>
+        <item>星期日</item>
+    </string-array>
+    <string name="exam_time">考试时间</string>
+    <string name="exam_classroom">考场</string>
+    <string name="course_id">课程编号</string>
 
     <!-- CET 页 -->
     <string name="overview">概览</string>

@@ -16,6 +16,8 @@ import com.chow.pomegranate.ui.screen.cet.CetRoute
 import com.chow.pomegranate.ui.screen.cet.cetEntry
 import com.chow.pomegranate.ui.screen.contact.ContactRoute
 import com.chow.pomegranate.ui.screen.contact.contactEntry
+import com.chow.pomegranate.ui.screen.exam.ExamRoute
+import com.chow.pomegranate.ui.screen.exam.examEntry
 import com.chow.pomegranate.ui.screen.login.LoginRoute
 import com.chow.pomegranate.ui.screen.login.loginEntry
 import com.chow.pomegranate.ui.screen.main.MainRoute
@@ -49,6 +51,7 @@ private val savedStateConfiguration = SavedStateConfiguration {
             subclass(ContactRoute::class)
             subclass(NoticeRoute::class)
             subclass(WebsitesRoute::class)
+            subclass(ExamRoute::class)
             subclass(CetRoute::class)
         }
     }
@@ -96,6 +99,8 @@ fun App(
                         noticeEntry()
                         // 常用网站页
                         websitesEntry()
+                        // 考试安排页
+                        examEntry()
                         // CET 页
                         cetEntry()
                     },

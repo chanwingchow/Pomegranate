@@ -1,6 +1,7 @@
 package com.chow.pomegranate.ui.screen.main.modules
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.ContactPage
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Phone
 import androidx.compose.material.icons.twotone.Security
@@ -11,6 +12,7 @@ import com.chow.pomegranate.Res
 import com.chow.pomegranate.academic_notice
 import com.chow.pomegranate.cet
 import com.chow.pomegranate.emergency_contact
+import com.chow.pomegranate.exam_schedule
 import com.chow.pomegranate.otp
 import com.chow.pomegranate.useful_websites
 import org.jetbrains.compose.resources.StringResource
@@ -47,6 +49,12 @@ enum class Module(
     UsefulWebsites(
         label = Res.string.useful_websites,
         icon = Icons.TwoTone.Web,
+    ),
+
+    /** 考试安排 */
+    ExamSchedule(
+        label = Res.string.exam_schedule,
+        icon = Icons.TwoTone.ContactPage,
     ),
 
     /** CET */

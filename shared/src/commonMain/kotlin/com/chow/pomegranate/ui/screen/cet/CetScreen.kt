@@ -348,6 +348,7 @@ private fun CetOverview(
         modifier = modifier,
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item(
             span = { GridItemSpan(maxLineSpan) },
