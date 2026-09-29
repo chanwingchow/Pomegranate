@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -94,6 +95,9 @@ private fun ContactContent(
 ) {
     val backStack = LocalBackStack.current
 
+    // 拨打电话
+    val uriHandler = LocalUriHandler.current
+
     // 高斯模糊
     val sky = rememberSky()
 
@@ -108,7 +112,7 @@ private fun ContactContent(
                 tabs = tabs,
                 pagerState = pagerState,
                 onBack = {
-                    backStack.removeLast()
+                    backStack.removeLastOrNull()
                 },
                 modifier = Modifier.cloudy(sky = sky),
             )
@@ -135,7 +139,10 @@ private fun ContactContent(
             ) {
                 items(emergencyContacts) { contact ->
                     ContactCard(
-                        onClick = {},
+                        onClick = {
+                            // 拉起系统拨号
+                            uriHandler.openUri("tel:${contact.phoneNumber}")
+                        },
                         department = {
                             // 部门名称
                             Text(stringResource(contact.department))

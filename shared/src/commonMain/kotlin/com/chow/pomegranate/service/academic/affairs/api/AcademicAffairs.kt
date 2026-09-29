@@ -7,6 +7,7 @@ import com.chow.pomegranate.service.academic.affairs.model.AcademicProgram
 import com.chow.pomegranate.service.academic.affairs.model.AcademicProgress
 import com.chow.pomegranate.service.academic.affairs.model.CampusCalendar
 import com.chow.pomegranate.service.academic.affairs.model.CourseDropLog
+import com.chow.pomegranate.service.academic.affairs.model.CourseOperateResult
 import com.chow.pomegranate.service.academic.affairs.model.CourseSearchParam
 import com.chow.pomegranate.service.academic.affairs.model.CourseSearchResponse
 import com.chow.pomegranate.service.academic.affairs.model.CourseSelectCategory
@@ -37,32 +38,12 @@ import kotlinx.serialization.json.Json
 
 /**
  * 教务系统。
+ *
+ * @param client Http 客户端，由会话层提供，登录失效时会自动重新登录
  */
-fun AcademicAffairs(): AcademicAffairs {
+fun AcademicAffairs(client: HttpClient): AcademicAffairs {
     return AcademicAffairsImpl(
-        httpClient = HttpClient {
-            // 默认请求
-            defaultRequest {
-                url("http://jwxt.gdufe.edu.cn")
-            }
-            // Cookie
-            install(HttpCookies) {
-                storage = AcceptAllCookiesStorage()
-            }
-            install(ContentNegotiation) {
-                // Json 解析
-                val json = Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
-                }
-                json(json)
-                json(
-                    json,
-                    // 教务系统返回的数据是 Json，但标记的类型是 HTML
-                    contentType = ContentType.Text.Html,
-                )
-            }
-        },
+        httpClient = client,
     )
 }
 
@@ -135,7 +116,7 @@ interface AcademicAffairs {
         suspend fun getCourseTranscript(): CourseTranscript
 
         /**
-         * 返回等级考试成绩。
+         * 返回等级成绩。
          */
         suspend fun getLevelTranscript(): LevelTranscript
 
@@ -244,13 +225,13 @@ interface AcademicAffairs {
             id: String,
             category: CourseSelectCategory,
             priority: CourseSelectPriority? = null,
-        )
+        ): CourseOperateResult
 
         /**
          * 退课。
          *
          * @param id 选课操作 id
          */
-        suspend fun dropCourse(id: String)
+        suspend fun dropCourse(id: String): CourseOperateResult
     }
 }

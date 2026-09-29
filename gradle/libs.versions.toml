@@ -5,39 +5,47 @@ android-minSdk = "30"
 android-targetSdk = "37"
 versionName = "1.0.0"
 androidx-activity = "1.13.0"
-androidx-appcompat = "1.7.1"
-androidx-core = "1.19.0"
+camera = "1.7.0-alpha03"
+mlkitBarcode = "17.3.0"
+zxing = "3.5.4"
+androidx-appcompat = "1.8.0"
+androidx-core = "1.19.1"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.11.0"
 androidx-testExt = "1.3.0"
 composeHotReload = "1.2.0"
-composeMultiplatform = "1.12.0-rc01"
+composeMultiplatform = "1.12.1"
 junit = "4.13.2"
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 kotlinx-coroutines = "1.11.0"
 material3 = "1.12.0-alpha03"
 
 # DateTime
 kotlinx-datetime = "0.8.0"
 # Network
-ktor = "3.5.2"
+ktor = "3.6.0"
 # Tooling
-buildkonfig = "0.22.0"
+buildkonfig = "0.23.0"
 # UI
-adaptive = "1.3.0-beta02"
+adaptive = "1.3.0-rc01"
 cloudy = "0.7.1"
-coil3 = "3.5.0"
+coil3 = "3.6.3"
 compose-shimmer = "1.5.0"
 liquid = "1.1.1"
 material-icons = "1.7.3"
-materialKolor = "5.0.0"
-navigation3 = "1.2.0-alpha02"
-pdfkmp = "1.2.0"
+materialKolor = "5.0.1"
+colorpicker = "1.3.0"
+navigation3 = "1.2.0-beta01"
+room = "3.0.3"
+sqlite = "2.7.1"
+ksp = "2.3.12"
+pdfkmp = "1.3.0"
 # Utils
 koin = "4.2.2"
-koinCompiler = "1.1.0"
+koinCompiler = "1.2.1"
 koltinx-io = "0.9.1"
 ksoup = "0.2.6"
+htmlText = "3.0.0-beta02"
 moonKmp = "1.0.0"
 tess4Android = "4.9.0"
 tess4j = "5.20.0"
@@ -52,6 +60,12 @@ androidx-testExt-junit = { module = "androidx.test.ext:junit", version.ref = "an
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camera" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camera" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camera" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camera" }
+mlkit-barcode = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcode" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
@@ -62,6 +76,7 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 
 # DateTime
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
@@ -70,7 +85,7 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { module ="io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 # UI
 adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
 adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "adaptive" }
@@ -83,8 +98,12 @@ liquid = { module = "io.github.fletchmckee.liquid:liquid", version.ref = "liquid
 material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "material-icons" }
 material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "material-icons" }
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
+colorpicker = { module = "com.github.skydoves:colorpicker-compose", version.ref = "colorpicker" }
 navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
+room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
+sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 pdfkmp = { module = "io.github.conamobiledev:pdfkmp", version.ref = "pdfkmp" }
 pdfkmp-viewer = { module = "io.github.conamobiledev:pdfkmp-viewer", version.ref = "pdfkmp" }
 # Utils
@@ -97,6 +116,7 @@ koin-compose-navigation3 = { module = "io.insert-koin:koin-compose-navigation3" 
 koin-android = { module = "io.insert-koin:koin-android" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "koltinx-io" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
+html-text = { module = "de.charlex.compose:html-text-material3", version.ref = "htmlText" }
 moon-ocr = { module = "io.github.moondev-studio:moon-ocr-kmp", version.ref = "moonKmp" }
 tess4Android = { module = "cz.adaptech.tesseract4android:tesseract4android", version.ref = "tess4Android" }
 tess4j = { module = "net.sourceforge.tess4j:tess4j", version.ref = "tess4j" }
@@ -123,6 +143,7 @@ ui = [
     "material-icons-core",
     "material-icons-extended",
     "materialKolor",
+    "colorpicker",
     "navigation3-ui",
     "lifecycle-viewmodel-navigation3",
     "pdfkmp",
@@ -136,6 +157,7 @@ utils = [
     "koin-compose-navigation3",
     "kotlinx-io-core",
     "ksoup",
+    "html-text",
     "moon-ocr",
 ]
 
@@ -152,3 +174,5 @@ kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig" }
 koinCompiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koinCompiler" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room3", version.ref = "room" }

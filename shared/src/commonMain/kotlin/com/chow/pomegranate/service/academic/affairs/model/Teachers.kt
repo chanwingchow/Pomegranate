@@ -11,7 +11,11 @@ data class Teachers(
     val pageIndex: Int,
     val pageCount: Int,
     val items: List<BasicTeacher>,
-)
+) {
+    /** 是否还有下一页。 */
+    val hasMorePages: Boolean
+        get() = pageIndex < pageCount
+}
 
 /**
  * 教师项。

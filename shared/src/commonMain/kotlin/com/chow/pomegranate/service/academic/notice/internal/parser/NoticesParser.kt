@@ -12,8 +12,14 @@ import kotlinx.coroutines.withContext
  * 教务通知列表解析器。
  */
 internal object NoticesParser {
+    /** 列表项选择器。 */
+    private const val NOTICE_LIST_CLASS = "news_list list2"
+
+    /** 总页数选择器。 */
+    private const val TOTAL_PAGES_CLASS = "all_pages"
+
     /**
-     * 将 [html] 解析为 [List]<[BasicNotice]>。
+     * 将 [html] 解析为 [NoticeParseResult]。
      *
      * @param html HTML
      * @param lazyRequestUrl 懒加载请求 URL
@@ -21,10 +27,10 @@ internal object NoticesParser {
     suspend fun parse(
         html: String,
         lazyRequestUrl: () -> Url,
-    ): List<BasicNotice> = withContext(Dispatchers.Default) {
+    ): NoticeParseResult = withContext(Dispatchers.Default) {
         val document = Ksoup.parse(html)
 
-        val ul = document.selectFirst(Evaluator.Class("news_list list2"))!!
+        val ul = document.selectFirst(Evaluator.Class(NOTICE_LIST_CLASS))!!
 
         // 通知列表
         val notices = mutableListOf<BasicNotice>()
@@ -44,6 +50,16 @@ internal object NoticesParser {
             )
         }
 
-        return@withContext notices
+        // 分页信息：形如 页码 1/78，用于判断真正的末页，
+        // 避免翻过末页后服务端仍返回 200 导致列表一直“正在加载”。
+        val totalPages = document.selectFirst(Evaluator.Class(TOTAL_PAGES_CLASS))
+            ?.text()
+            ?.trim()
+            ?.toIntOrNull()
+
+        return@withContext NoticeParseResult(
+            notices = notices,
+            totalPages = totalPages?.takeIf { it > 0 },
+        )
     }
 }

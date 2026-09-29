@@ -10,6 +10,7 @@ import com.chow.pomegranate.Res
 import com.chow.pomegranate.me
 import com.chow.pomegranate.modules
 import com.chow.pomegranate.timetable
+import com.chow.pomegranate.ui.screen.main.me.Gender
 
 /**
  * 主页部分。
@@ -44,4 +45,16 @@ enum class MainSection(
         label = Res.string.me,
         icon = Icons.TwoTone.Face4,
     )
+}
+
+/**
+ * 返回分区图标。
+ *
+ * "我"的图标跟随所选性别变化，其余分区用固定图标。
+ *
+ * @param gender 当前性别
+ */
+fun MainSection.icon(gender: Gender): ImageVector = when (this) {
+    MainSection.Me -> gender.icon
+    else -> icon
 }

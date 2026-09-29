@@ -3,6 +3,7 @@ package com.chow.pomegranate.ui.screen.main
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,11 +17,14 @@ import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +46,10 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import androidx.window.core.layout.WindowSizeClass
 import com.chow.pomegranate.ui.component.PomTooltipBox
+import com.chow.pomegranate.ui.navigation.popDestination
+import com.chow.pomegranate.ui.navigation.selectTopLevel
 import com.chow.pomegranate.ui.screen.main.me.MeRoute
 import com.chow.pomegranate.ui.screen.main.me.MeScreen
 import com.chow.pomegranate.ui.screen.main.modules.ModulesRoute
@@ -58,6 +65,11 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.runtime.collectAsState
+import com.chow.pomegranate.data.local.PreferenceKeys
+import com.chow.pomegranate.repository.AppPreferenceRepository
+import com.chow.pomegranate.ui.screen.main.me.Gender
+import org.koin.compose.koinInject
 
 /**
  * 主页导航入口。
@@ -112,11 +124,22 @@ private fun MainContent(
     // 悬浮工具栏展开状态
     var floatingToolbarExpanded by remember { mutableStateOf(true) }
 
+    // 性别："我"的图标需要跟随它变化
+    val preferenceRepository = koinInject<AppPreferenceRepository>()
+    val gender = preferenceRepository.observe(PreferenceKeys.GENDER)
+        .collectAsState(initial = null)
+        .value
+        ?.toIntOrNull()
+        ?.let { ordinal -> Gender.entries.getOrNull(ordinal) }
+        ?: Gender.Default
+
     // 返回堆栈
     val backStack = rememberNavBackStack(
         configuration = config,
         TimetableRoute,
     )
+    val isWideNavigation = currentWindowAdaptiveInfoV2().windowSizeClass
+        .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
 
     // 液态玻璃效果
     val liquidState = rememberLiquidState()
@@ -126,70 +149,105 @@ private fun MainContent(
         modifier = modifier,
         contentWindowInsets = WindowInsets.captionBar,
     ) { innerPadding ->
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            // 悬浮工具栏，该组件需要比内容先获取焦点，所以放在此处，
-            // 并添加 zIndex 保证在内容上方
-            FloatingToolbar(
-                expanded = floatingToolbarExpanded,
-                onExpandedChange = { floatingToolbarExpanded = it },
-                currentRoute = backStack.last(),
-                onNavigate = {
-                    backStack[0] = it
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = -FloatingToolbarDefaults.ScreenOffset)
-                    .zIndex(1f)
-                    .clip(CircleShape)
-                    .liquid(liquidState) {
-                        tint = liquidTint
-                    }
-                    .border(
-                        width = 0.2.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        shape = CircleShape,
-                    ),
-                colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
-                    // 应用液态玻璃，不用默认的容器颜色
-                    toolbarContainerColor = Color.Transparent,
-                ),
-            )
+            if (isWideNavigation) {
+                MainNavigationRail(
+                    currentRoute = backStack.last(),
+                    onNavigate = backStack::selectTopLevel,
+                    gender = gender,
+                )
+            }
 
-            // 导航
-            NavDisplay(
-                backStack = backStack,
+            Box(
                 modifier = Modifier
-                    .padding(innerPadding)
-                    .liquefiable(liquidState),
-                // 将 ViewModel 范围限定为 NavEntry
-                entryDecorators = listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                ),
-                entryProvider = entryProvider {
-                    // 课表页
-                    entry<TimetableRoute> {
-                        TimetableScreen(
-                            toolbarExpanded = floatingToolbarExpanded,
-                            onToolbarExpandedChange = { floatingToolbarExpanded = it },
-                        )
-                    }
-                    // 模块页
-                    entry<ModulesRoute> {
-                        ModulesScreen()
-                    }
-                    // 我的页
-                    entry<MeRoute> {
-                        MeScreen(
-                            toolbarExpanded = floatingToolbarExpanded,
-                            onToolbarExpandedChange = { floatingToolbarExpanded = it },
-                        )
-                    }
-                },
+                    .weight(1f)
+                    .fillMaxSize(),
+            ) {
+                if (!isWideNavigation) {
+                    FloatingToolbar(
+                        expanded = floatingToolbarExpanded,
+                        onExpandedChange = { floatingToolbarExpanded = it },
+                        currentRoute = backStack.last(),
+                        onNavigate = backStack::selectTopLevel,
+                        gender = gender,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .offset(y = -FloatingToolbarDefaults.ScreenOffset)
+                            .zIndex(1f)
+                            .clip(CircleShape)
+                            .liquid(liquidState) { tint = liquidTint }
+                            .border(
+                                width = 0.2.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                                shape = CircleShape,
+                            ),
+                        colors = FloatingToolbarDefaults.standardFloatingToolbarColors(
+                            toolbarContainerColor = Color.Transparent,
+                        ),
+                    )
+                }
+
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = { backStack.popDestination() },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .liquefiable(liquidState),
+                    // 将 ViewModel 范围限定为 NavEntry
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                    entryProvider = entryProvider {
+                        // 课表页
+                        entry<TimetableRoute> {
+                            TimetableScreen(
+                                toolbarExpanded = floatingToolbarExpanded,
+                                onToolbarExpandedChange = { floatingToolbarExpanded = it },
+                            )
+                        }
+                        // 模块页
+                        entry<ModulesRoute> {
+                            ModulesScreen()
+                        }
+                        // 我的页
+                        entry<MeRoute> {
+                            MeScreen(
+                                toolbarExpanded = floatingToolbarExpanded,
+                                onToolbarExpandedChange = { floatingToolbarExpanded = it },
+                            )
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** 宽屏设备使用靠近屏幕边缘的导航栏。 */
+@Composable
+private fun MainNavigationRail(
+    currentRoute: NavKey,
+    onNavigate: (NavKey) -> Unit,
+    gender: Gender,
+) {
+    NavigationRail {
+        MainSection.entries.forEach { section ->
+            val route = when (section) {
+                MainSection.Modules -> ModulesRoute
+                MainSection.Timetable -> TimetableRoute
+                MainSection.Me -> MeRoute
+            }
+            NavigationRailItem(
+                selected = currentRoute::class == route::class,
+                onClick = { onNavigate(route) },
+                icon = { Icon(section.icon(gender), contentDescription = null) },
+                label = { Text(stringResource(section.label)) },
+                alwaysShowLabel = true,
             )
         }
     }
@@ -210,6 +268,7 @@ private fun FloatingToolbar(
     onExpandedChange: (Boolean) -> Unit,
     currentRoute: NavKey,
     onNavigate: (NavKey) -> Unit,
+    gender: Gender,
     modifier: Modifier = Modifier,
     colors: FloatingToolbarColors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
 ) {
@@ -227,7 +286,7 @@ private fun FloatingToolbar(
                     onNavigate(ModulesRoute)
                 },
                 label = stringResource(section.label),
-                icon = section.icon,
+                icon = section.icon(gender),
             )
         },
         trailingContent = {
@@ -240,7 +299,7 @@ private fun FloatingToolbar(
                     onNavigate(MeRoute)
                 },
                 label = stringResource(section.label),
-                icon = section.icon,
+                icon = section.icon(gender),
             )
         },
     ) {
@@ -264,7 +323,7 @@ private fun FloatingToolbar(
                             }
                         },
                         label = stringResource(section.label),
-                        icon = section.icon,
+                        icon = section.icon(gender),
                     )
                 }
             }

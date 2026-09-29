@@ -44,14 +44,17 @@ internal object TeachersParser {
 
         // 页数信息
         val pageInfoDiv = document.selectFirst(Evaluator.Class("Nsb_r_list_fy"))!!
-        // 当前页数
+        // 当前页数；分页控件没有 value（首页/无翻页）时按第 1 页处理，不要让 toInt 抛异常
         val pageIndex = pageInfoDiv.child(0)
             .child(1)
             .attr("value")
-            .toInt()
-        // 总页数
+            .trim()
+            .toIntOrNull()
+            ?.takeIf { it > 0 }
+            ?: 1
+        // 总页数；解析不出时按 1 页处理，绝不返回 0 或负数给分页循环
         val pageCount = pageCountRegex.find(pageInfoDiv.child(1).child(0).text())
-            ?.groupValues?.get(1)?.toInt() ?: 1
+            ?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it > 0 } ?: 1
 
         return@withContext Teachers(
             pageIndex = pageIndex,

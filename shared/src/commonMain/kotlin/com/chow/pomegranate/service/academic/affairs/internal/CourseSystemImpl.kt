@@ -105,22 +105,14 @@ internal class CourseSystemImpl(
         id: String,
         category: CourseSelectCategory,
         priority: CourseSelectPriority?,
-    ) {
-        val body = httpClient.get("/jsxsd/xsxkkc/${category.operateRoute}xkOper") {
+    ): CourseOperateResult = httpClient.get("/jsxsd/xsxkkc/${category.operateRoute}xkOper") {
             parameter("jx0404id", id)
             parameter("xkzy", priority?.id ?: "")
             parameter("trjf", "")
             parameter("cxxdlx", "1")
-        }.body<CourseOperateResult>()
+        }.body()
 
-        check(body.isSuccess) { body.message ?: "" }
-    }
-
-    override suspend fun dropCourse(id: String) {
-        val body = httpClient.get("/jsxsd/xsxkjg/xstkOper") {
+    override suspend fun dropCourse(id: String): CourseOperateResult = httpClient.get("/jsxsd/xsxkjg/xstkOper") {
             parameter("jx0404id", id)
-        }.body<CourseOperateResult>()
-
-        check(body.isSuccess) { body.message ?: "" }
-    }
+        }.body()
 }

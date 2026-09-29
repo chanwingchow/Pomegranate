@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用主题（深色）：父主题换成深色版本，窗口背景取 values-night/colors.xml 的纯黑。 -->
+    <style name="Theme.Pomegranate" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:colorBackground">@color/window_background</item>
+    </style>
+</resources>

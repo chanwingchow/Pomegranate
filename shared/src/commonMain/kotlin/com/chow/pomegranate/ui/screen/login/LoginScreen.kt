@@ -1,14 +1,17 @@
 package com.chow.pomegranate.ui.screen.login
 
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,11 +31,10 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.Login
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -44,7 +46,7 @@ import androidx.compose.material3.TextFieldLabelScope
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,14 +56,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.jetbrains.compose.resources.decodeToImageBitmap
+import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.ui.component.BackIconButton
+import com.chow.pomegranate.ui.component.InlineLoadingIndicatorSize
+import com.chow.pomegranate.ui.component.PomLoadingIndicator
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.component.VisibilityIconButton
 import com.chow.pomegranate.ui.input.PasswordOutputTransformation
@@ -81,6 +89,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.app_poem
+import com.chow.pomegranate.captcha
 import com.chow.pomegranate.collapse
 import com.chow.pomegranate.default_extracurricular_password
 import com.chow.pomegranate.expand
@@ -91,8 +100,13 @@ import com.chow.pomegranate.logging_in
 import com.chow.pomegranate.login
 import com.chow.pomegranate.logo
 import com.chow.pomegranate.password
+import com.chow.pomegranate.refresh_captcha
 import com.chow.pomegranate.username
-import kotlin.time.Duration.Companion.seconds
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalUriHandler
+
+/** 融合门户，用于重置密码。 */
+private const val PASSWORD_RESET_URL = "https://imy.gdufe.edu.cn"
 
 /**
  * 登录页导航入口。
@@ -115,9 +129,11 @@ data object LoginRoute : NavKey
 @Composable
 private fun LoginScreen(
     modifier: Modifier = Modifier,
+    viewModel: LoginViewModel = koinViewModel(),
 ) {
     LoginContent(
-        modifier = modifier
+        viewModel = viewModel,
+        modifier = modifier,
     )
 }
 
@@ -135,18 +151,21 @@ private fun LoginContentPreview() {
 @Composable
 private fun LoginContent(
     modifier: Modifier = Modifier,
+    viewModel: LoginViewModel? = null,
 ) {
     val backStack = LocalBackStack.current
+
+    // 打开重置密码页面
+    val uriHandler = LocalUriHandler.current
 
     // 高斯模糊
     val sky = rememberSky()
 
-    // 学号
+    // 输入框状态
     val username = rememberTextFieldState()
-    // 密码
     val password = rememberTextFieldState()
-    // 第二课堂密码
     val extracurricularPassword = rememberTextFieldState()
+    val captcha = rememberTextFieldState()
 
     // 密码可见性
     var passwordVisible by remember { mutableStateOf(false) }
@@ -161,21 +180,19 @@ private fun LoginContent(
         if (expanded) 180f else 0f,
     )
 
-    var isLoggingIn by remember { mutableStateOf(false) }
+    // 登录状态
+    val isLoggingIn = viewModel?.isLoggingIn?.collectAsState()?.value ?: false
 
-    LaunchedEffect(isLoggingIn) {
-        if (isLoggingIn) {
-            delay(4.seconds)
-            isLoggingIn = false
-        }
-    }
+    // 验证码图片
+    val captchaFlow = viewModel?.captcha
+    val captchaImage by (captchaFlow ?: MutableStateFlow<ByteArray?>(null)).collectAsState()
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopBar(
                 onBack = {
-                    backStack.removeLast()
+                    backStack.removeLastOrNull()
                 },
                 modifier = Modifier.cloudy(sky = sky),
             )
@@ -281,13 +298,26 @@ private fun LoginContent(
                 }
             }
 
+            if (viewModel != null) {
+                item {
+                    // 验证码
+                    CaptchaSetting(
+                        image = captchaImage,
+                        state = captcha,
+                        onRefresh = viewModel::refreshCaptcha,
+                    )
+                }
+            }
+
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                    // 忘记密码
+                    // 忘记密码：前往融合门户重置
                     Text(
                         stringResource(Res.string.forget_password),
-                        modifier = Modifier.align(Alignment.End),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .clickable { uriHandler.openUri(PASSWORD_RESET_URL) },
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -297,11 +327,82 @@ private fun LoginContent(
                 // 登录按钮
                 LoginButton(
                     onClick = {
-                        isLoggingIn = true
+                        viewModel?.login(
+                            userId = username.text.toString(),
+                            password = password.text.toString(),
+                            secondClassroomPassword = extracurricularPassword.text.toString(),
+                            captcha = captcha.text.toString(),
+                            onSuccess = {
+                                // 登录成功，返回上一页
+                                backStack.removeLastOrNull()
+                            },
+                        )
                     },
                     isLoggingIn = isLoggingIn,
                 )
             }
+        }
+    }
+}
+
+/**
+ * 验证码设置项。
+ *
+ * @param image 验证码图片
+ * @param state 用户手动输入的验证码，留空时由程序自动识别
+ * @param onRefresh 刷新验证码
+ */
+@Composable
+private fun CaptchaSetting(
+    image: ByteArray?,
+    state: TextFieldState,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // 验证码图片
+        Surface(
+            onClick = onRefresh,
+            modifier = Modifier.size(width = 120.dp, height = 56.dp),
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+        ) {
+            if (image != null) {
+                Image(
+                    bitmap = remember(image) { image.decodeToImageBitmap() },
+                    contentDescription = stringResource(Res.string.refresh_captcha),
+                    contentScale = ContentScale.Fit,
+                )
+            }
+        }
+
+        // 手动填写验证码，留空则自动识别
+        TextField(
+            state = state,
+            modifier = Modifier.weight(1f),
+            label = {
+                Text(
+                    stringResource(Res.string.captcha),
+                )
+            },
+            inputTransformation = InputTransformation.maxLength(4),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Ascii,
+            ),
+        )
+
+        // 刷新按钮
+        IconButton(
+            onClick = onRefresh,
+        ) {
+            Icon(
+                Icons.Rounded.Refresh,
+                contentDescription = stringResource(Res.string.refresh_captcha),
+            )
         }
     }
 }
@@ -350,8 +451,9 @@ private fun PomIntroduction(
                 color = MaterialTheme.colorScheme.primaryFixed,
             ),
         ) {
-            Icon(
-                painterResource(Res.drawable.ic_logo),
+            // 用 Image 而不是 Icon：Icon 默认会用主题色把 logo 染成单色，会丢掉渐变
+            Image(
+                painter = painterResource(Res.drawable.ic_logo),
                 contentDescription = stringResource(Res.string.logo),
                 modifier = Modifier.size(72.dp).shimmer(
                     customShimmer = rememberShimmer(
@@ -467,10 +569,7 @@ private fun LoginButton(
     ) {
         if (isLoggingIn) {
             // 登录中动画
-            LoadingIndicator(
-                modifier = Modifier.size(24.dp),
-                color = LocalContentColor.current,
-            )
+            PomLoadingIndicator(size = InlineLoadingIndicatorSize)
 
             Spacer(modifier = Modifier.width(8.dp))
 

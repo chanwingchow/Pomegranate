@@ -9,6 +9,7 @@ import com.chow.pomegranate.service.extracurricular.model.Transcript
 import com.chow.pomegranate.service.extracurricular.model.TranscriptLogs
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -22,6 +23,11 @@ fun ExtracurricularActivity(): ExtracurricularActivity {
             // 默认请求
             defaultRequest {
                 url("http://2ketang.gdufe.edu.cn")
+            }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 20_000
+                connectTimeoutMillis = 10_000
+                socketTimeoutMillis = 20_000
             }
             install(ContentNegotiation) {
                 // Json 解析
@@ -53,7 +59,16 @@ interface ExtracurricularActivity {
      * 认证模块。
      */
     interface Auth {
-        suspend fun login(userId: String, password: String)
+        /** 登录并返回会话 ID。 */
+        suspend fun login(userId: String, password: String): String
+
+        /**
+         * 恢复已有会话。
+         *
+         * @param userId 学号
+         * @param sessionId 会话 ID
+         */
+        fun restore(userId: String, sessionId: String)
     }
 
     /**

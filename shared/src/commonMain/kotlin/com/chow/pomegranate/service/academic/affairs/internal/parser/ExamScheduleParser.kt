@@ -55,20 +55,25 @@ internal object ExamScheduleParser {
             // #dataList > tbody > tr
             val tr = tbody.child(rowIndex)
 
-            val (startTime, endTime) = tr.child(3).text()
-                .split('~', limit = 2)
-                .map { LocalDateTime.parse(it, dateTimeFormat) }
-                .let { it[0] to it[2] }
+            // 时间形如 "2026-01-05 09:00~2026-01-05 11:00"。
+            // 必须逐行容错：单行时间格式异常只丢这一行，不能让整页考试安排失败
+            // （原实现 split(limit = 2) 后取下标 2，只要有考试数据就必然越界崩溃）。
+            val timeRange = tr.child(3).text().split('~', limit = 2)
+            if (timeRange.size < 2) continue
+
+            val startTime = parseExamTimeOrNull(timeRange[0]) ?: continue
+            val endTime = parseExamTimeOrNull(timeRange[1]) ?: continue
 
             val exam = CourseExam(
                 courseId = tr.child(1).text(),
                 courseName = tr.child(2).text(),
                 startTime = startTime,
                 endTime = endTime,
-                campus = when (val campus = tr.child(4).text()) {
-                    "广州校区" -> Campus.Canton
-                    "佛山校区" -> Campus.Foshan
-                    else -> error("Unknow campus: $campus.")
+                // 校区文案不认识时按广州校区兜底，不再让整页解析失败
+                campus = if (tr.child(4).text().trim() == "佛山校区") {
+                    Campus.Foshan
+                } else {
+                    Campus.Canton
                 },
                 classroom = tr.child(5).text(),
             )
@@ -82,4 +87,8 @@ internal object ExamScheduleParser {
             exams = exams,
         )
     }
+
+    /** 解析考试时间，格式不符时返回 `null` 交由调用方跳过该行。 */
+    private fun parseExamTimeOrNull(text: String): LocalDateTime? =
+        runCatching { LocalDateTime.parse(text.trim(), dateTimeFormat) }.getOrNull()
 }

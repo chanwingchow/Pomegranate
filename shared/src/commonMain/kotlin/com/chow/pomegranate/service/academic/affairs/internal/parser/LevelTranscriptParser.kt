@@ -8,7 +8,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
 
 /**
- * 等级考试成绩解析器。
+ * 等级成绩解析器。
  */
 internal object LevelTranscriptParser {
     /**
@@ -26,7 +26,7 @@ internal object LevelTranscriptParser {
         val tbody = document.getElementById("dataList")!!
             .firstElementChild()!!
 
-        // 等级考试成绩项
+        // 等级成绩项
         val items = mutableListOf<LevelGrade>()
 
         val rowLastIndex = tbody.childrenSize() - 1

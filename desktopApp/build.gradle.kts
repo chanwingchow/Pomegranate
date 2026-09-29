@@ -23,6 +23,16 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.chow.pomegranate"
             packageVersion = libs.versions.versionName.get()
+
+            macOS {
+                iconFile.set(project.file("src/main/resources/icons/Pomegranate.icns"))
+            }
+            windows {
+                iconFile.set(project.file("src/main/resources/icons/Pomegranate.ico"))
+            }
+            linux {
+                iconFile.set(project.file("src/main/resources/icons/Pomegranate.png"))
+            }
         }
     }
 }

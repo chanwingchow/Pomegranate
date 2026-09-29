@@ -4,14 +4,12 @@ import com.chow.pomegranate.service.academic.affairs.model.CourseSearchParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
 import com.chow.pomegranate.service.foundation.Semester
+import com.chow.pomegranate.LocalTestCredentials
+import com.chow.pomegranate.session.CookieStorage
+import com.chow.pomegranate.session.baseAcademicAffairsHttpClient
+import com.chow.pomegranate.tool.ocr.OcrEngine
 import com.chow.pomegranate.tool.ocr.createCaptchaOcrEngine
-import com.moondeveloper.ocr.OcrEngine
-import io.ktor.utils.io.readText
 import kotlinx.coroutines.runBlocking
-import kotlinx.io.SystemLineSeparator
-import kotlinx.io.buffered
-import kotlinx.io.files.Path
-import kotlinx.io.files.SystemFileSystem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.fail
@@ -27,26 +25,15 @@ class AcademicAffairsTest {
 
     @BeforeTest
     fun setUp() {
-        academicAffairs = AcademicAffairs()
-        captchaOcrEngine = createCaptchaOcrEngine {
-            dataPath("src\\commonTest\\resources\\tessdata")
-        }
+        // 使用不包含会话校验的客户端，测试中每次自行登录
+        academicAffairs = AcademicAffairs(baseAcademicAffairsHttpClient(CookieStorage()))
+        captchaOcrEngine = createCaptchaOcrEngine()
 
-        // 读取 local.properties 里面的用户配置
-        // user.name=学号
-        // user.password=密码
-        val properties = SystemFileSystem.source(Path("../local.properties"))
-            .buffered()
-            .readText()
-            .split(SystemLineSeparator)
-            .filter { it.startsWith("user") }
-            .associate {
-                val (key, value) = it.split("=")
-                key.trim() to value.trim()
-            }
+        // 没有配置账号时跳过，避免无凭据环境下以失败告终
+        val credentials = LocalTestCredentials.academicAffairs ?: return
 
-        username = properties["user.name"]!!
-        password = properties["user.password"]!!
+        username = credentials.userId
+        password = credentials.password
     }
 
     /**
@@ -54,6 +41,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun login() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {}
     }
 
@@ -62,6 +50,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getTimetable() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val semester = Semester.now()
 
@@ -76,6 +65,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getCourseTimetable() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val semester = Semester.now()
 
@@ -90,6 +80,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getExamSchedule() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val semester = Semester.now()
 
@@ -104,6 +95,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getCourseTranscript() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val courseTranscript = academicAffairs.enrollment.getCourseTranscript()
 
@@ -112,10 +104,11 @@ class AcademicAffairsTest {
     }
 
     /**
-     * 获取等级考试成绩测试。
+     * 获取等级成绩测试。
      */
     @Test
     fun getLevelTranscript() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val levelTranscript = academicAffairs.enrollment.getLevelTranscript()
 
@@ -128,6 +121,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getExemption() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val semester = Semester.now()
 
@@ -142,6 +136,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getCampusCalendar() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val semester = Semester.now()
 
@@ -156,6 +151,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getTeachers() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val teachers = academicAffairs.enrollment.getTeachers()
 
@@ -168,6 +164,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getTeacher() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val teachers = academicAffairs.enrollment.getTeachers()
             val id = teachers.items.first().id
@@ -183,6 +180,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getAcademicPlan() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val academicPlan = academicAffairs.academic.getAcademicPlan()
 
@@ -195,6 +193,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getAcademicProgress() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val academicProgress = academicAffairs.academic.getAcademicProgress()
 
@@ -207,6 +206,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getAcademicAlert() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val academicAlert = academicAffairs.academic.getAcademicAlert()
 
@@ -219,6 +219,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getAcademicProgram() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val academicProgram = academicAffairs.academic.getAcademicProgram()
 
@@ -231,6 +232,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getGraduationAudit() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithAcademicAffairsLogin {
             val graduationAudit = academicAffairs.academic.getGraduationAudit()
 
@@ -243,6 +245,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun enterCourseSystemSession() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithEnterCourseSystem {}
     }
 
@@ -251,6 +254,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getCreditSummary() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithEnterCourseSystem {
             val creditSummary = academicAffairs.courseSystem.getCreditSummary()
 
@@ -263,6 +267,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getSelectedCourses() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithEnterCourseSystem {
             val selectedCourses = academicAffairs.courseSystem.getSelectedCourses()
 
@@ -275,6 +280,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun getCourseDropLogs() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithEnterCourseSystem {
             val courseDropLogs = academicAffairs.courseSystem.getCourseDropLogs()
 
@@ -287,6 +293,7 @@ class AcademicAffairsTest {
      */
     @Test
     fun searchCourse() = runBlocking {
+        if (!hasAcademicAffairsCredentials()) return@runBlocking
         runWithEnterCourseSystem {
             val params = CourseSearchParam.General()
             val response = academicAffairs.courseSystem.searchCourses(params)
@@ -331,7 +338,7 @@ class AcademicAffairsTest {
             val param = LoginParam(
                 username = username,
                 password = password,
-                captcha = captcha.fullText,
+                captcha = captcha,
             )
             val loginResult = academicAffairs.auth.login(param)
 
@@ -357,3 +364,11 @@ class AcademicAffairsTest {
         fail()
     }
 }
+
+/**
+ * 没有配置真实账号时跳过整个用例。
+ *
+ * 这些用例要连校园网并用真账号登录，CI 上必然失败；跳过才能让真实回归不被淹没。
+ */
+private fun hasAcademicAffairsCredentials(): Boolean =
+    LocalTestCredentials.academicAffairs != null

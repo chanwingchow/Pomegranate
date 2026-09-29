@@ -3,6 +3,8 @@
     <string name="app_poem">人生若只如初见，何事秋风悲画扇。</string>
 
     <string name="error">错误</string>
+    <string name="refresh">刷新</string>
+    <string name="load_failed">加载失败，请稍后重试。</string>
 
     <!-- 主页 -->
     <string name="timetable">课表</string>
@@ -24,12 +26,36 @@
     <string name="otp">OTP</string>
     <string name="emergency_contact">紧急电话</string>
     <string name="academic_notice">教学通知</string>
+    <string name="notice_search">搜索通知</string>
+    <string name="notice_filter_all">全部</string>
+    <string name="notice_filter_today">今天</string>
+    <string name="notice_filter_yesterday">昨天</string>
+    <string name="notice_filter_this_week">本周</string>
+    <string name="notice_filter_this_month">本月</string>
+    <string name="loading_more">正在加载更多…</string>
+    <string name="no_more_notices">没有更多通知了</string>
+    <string name="retry">重试</string>
+    <string name="search_clear">清空搜索</string>
+    <string name="searching_notices">正在搜索，已加载第 %1$d 页…</string>
+    <string name="search_more">继续查找更多匹配结果</string>
+    <string name="load_more_results">加载更多结果</string>
+    <string name="pull_up_to_load_more">继续上拉加载更多</string>
+    <string name="notice_not_found">已加载全部 %1$d 页通知，没有匹配「%2$s」的结果</string>
+    <string name="notice_not_found_in_range">已加载全部 %1$d 页通知，该时间范围内没有结果</string>
     <string name="useful_websites">常用网站</string>
+    <string name="link_copied">链接已复制。</string>
     <string name="exam_schedule">考试安排</string>
     <string name="cet">四六级</string>
+    <string name="transcript">成绩</string>
 
     <!-- 我的页 -->
+    <string name="account_operation_failed">账号操作失败，请稍后重试。</string>
     <string name="avatar">头像</string>
+    <string name="change_avatar">更换头像</string>
+    <string name="restore_default_avatar">恢复默认头像</string>
+    <string name="avatar_updated">头像已更新，仅保存在本机。</string>
+    <string name="avatar_restored">已恢复默认头像。</string>
+    <string name="avatar_local_only">头像仅保存在本机，不会上传或同步到学校账户。</string>
     <string name="background">背景</string>
     <string name="wallpaper">壁纸</string>
     <string name="campus">校区</string>
@@ -39,6 +65,15 @@
     <string name="boy">男生</string>
     <string name="girl">女生</string>
     <string name="favorite_color">喜欢的颜色</string>
+    <string name="color_hex">十六进制颜色</string>
+    <string name="reset">重置</string>
+    <string name="color_hex_invalid">请输入 6 位或 8 位十六进制颜色</string>
+    <string name="blue">蓝色</string>
+    <string name="teal">青色</string>
+    <string name="green">绿色</string>
+    <string name="orange">橙色</string>
+    <string name="pink">粉色</string>
+    <string name="purple">紫色</string>
     <string name="settings">设置</string>
 
     <!-- 设置页 -->
@@ -48,6 +83,7 @@
     <string name="light">浅色</string>
     <string name="dark">深色</string>
     <string name="week">周次</string>
+    <string name="week_of">第 %1$d 周</string>
     <string name="tips">提示</string>
     <string name="week_tooltip">周次影响课表展示，第 0 周表示开学前一周</string>
     <string name="logo">应用图标</string>
@@ -55,6 +91,7 @@
 
     <!-- 登录页 -->
     <string name="login">登录</string>
+    <string name="login_required">请先登录后再查看</string>
     <string name="logging_in">登录中</string>
     <string name="username">学号</string>
     <string name="password">密码</string>
@@ -65,11 +102,49 @@
     <string name="hide_password">隐藏密码</string>
     <string name="expand">展开</string>
     <string name="collapse">收起</string>
+    <string name="captcha">验证码</string>
+    <string name="refresh_captcha">刷新验证码</string>
+    <string name="login_failed">登录失败</string>
+    <string name="username_required">请输入学号</string>
+    <string name="password_required">请输入密码</string>
+
+    <!-- 账号管理 -->
+    <string name="account_management">账号管理</string>
+    <string name="add_account">添加账号</string>
+    <string name="current_account">当前账号</string>
+    <string name="no_accounts">暂无已保存的账号</string>
+    <string name="session_expired">登录状态已过期，请重新登录</string>
+    <string name="confirm_delete_account">确定删除账号“%1$s”吗？</string>
+
+    <!-- 设置页 -->
+    <string name="logout">退出登录</string>
+    <string name="confirm_logout">确定退出当前账号吗？</string>
+    <string name="logging_out">退出中</string>
 
     <!-- OTP 页-->
     <string name="add">添加</string>
     <string name="edit">编辑</string>
     <string name="delete">删除</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="no_otp_accounts">暂无 OTP 账户，点击右下角按钮添加</string>
+    <string name="otp_issuer">服务名称</string>
+    <string name="otp_account">账户名称</string>
+    <string name="otp_secret">Base32 密钥</string>
+    <string name="otp_import">从剪贴板导入</string>
+    <string name="qr_scan">扫码添加</string>
+    <string name="qr_need_camera">需要相机权限才能扫码</string>
+    <string name="qr_pick_image">选择图片</string>
+    <string name="qr_paste_image">粘贴图片</string>
+    <string name="qr_no_code_found">没能在图片里找到二维码</string>
+    <string name="qr_clipboard_no_image">剪贴板里没有图片</string>
+    <string name="otp_advanced">高级选项</string>
+    <string name="otp_import_empty">剪贴板里没有可用的 otpauth:// 链接</string>
+    <string name="otp_import_algorithm">该链接的哈希算法暂不支持（仅支持 SHA1）</string>
+    <string name="otp_secret_invalid">密钥不是合法的 Base32</string>
+    <string name="otp_digits">位数</string>
+    <string name="otp_period">周期（秒）</string>
+    <string name="confirm_delete_otp">确定删除“%1$s”吗？</string>
 
     <!-- 紧急电话页 -->
     <string name="outpatient_department">门诊部急救</string>
@@ -109,4 +184,80 @@
     <string name="details">详情</string>
     <string name="morning">上午</string>
     <string name="afternoon">下午</string>
+
+    <!-- 成绩页 -->
+    <string name="course_transcript">课程成绩</string>
+    <string name="level_transcript">等级成绩</string>
+    <string name="no_course_transcript">暂无课程成绩</string>
+    <string name="no_level_transcript">暂无等级成绩</string>
+    <string name="score">成绩</string>
+    <string name="semester">学期</string>
+    <string name="credits">学分</string>
+    <string name="hours">学时</string>
+    <string name="regular_score">平时成绩</string>
+    <string name="lab_score">实验成绩</string>
+    <string name="final_score">期末成绩</string>
+    <string name="assessment">考核方式</string>
+    <string name="course_attribute">课程属性</string>
+    <string name="course_category">课程性质</string>
+    <string name="elective_category">通选课分类</string>
+    <string name="exam_category">考试性质</string>
+    <string name="score_mark">成绩标识</string>
+    <string name="note">备注</string>
+    <string name="exam_date">考试日期</string>
+    <string name="close">关闭</string>
+
+    <!-- 学业功能页 -->
+    <string name="course_selection">选课系统</string>
+    <string name="extracurricular">第二课堂</string>
+    <string name="teachers">教师信息</string>
+    <string name="course_timetable">全校课表</string>
+    <string name="academic_plan">执行计划</string>
+    <string name="academic_progress">学业进度</string>
+    <string name="academic_program">培养方案</string>
+    <string name="academic_data">学业数据</string>
+    <string name="academic_record_count">共 %1$d 条记录，点按卡片查看完整信息。</string>
+    <string name="no_academic_data">暂无可展示的数据</string>
+    <string name="view_details">查看详情</string>
+
+    <!-- 通用操作 -->
+    <string name="search">搜索</string>
+    <string name="confirm">确认</string>
+    <string name="processing">处理中</string>
+    <string name="save_failed">保存失败，请稍后重试。</string>
+
+    <!-- 通用搜索框 -->
+    <string name="keyword">关键词</string>
+
+    <!-- 选课页 -->
+    <string name="course_selection_load_failed">选课数据加载失败。</string>
+    <string name="credit_progress">%1$s：%2$s / %3$s 学分</string>
+    <string name="selected_courses">已选课程</string>
+    <string name="no_selected_courses">暂无已选课程</string>
+    <string name="course_summary">%1$s · %2$s 学分 · %3$s</string>
+    <string name="drop_course">退课</string>
+    <string name="course_search_label">课程名称或教师</string>
+    <string name="selectable_general_courses">可选通识课程</string>
+    <string name="course_search_hint">输入关键词搜索课程</string>
+    <string name="selectable_course_summary">%1$s · %2$d/%3$d 个剩余名额 · %4$s</string>
+    <string name="course_selected">已选</string>
+    <string name="select_course">选课</string>
+    <string name="confirm_select_course">确认选课</string>
+    <string name="confirm_drop_course">确认退课</string>
+    <string name="confirm_select_course_message">确定选择“%1$s”吗？</string>
+    <string name="confirm_drop_course_message">退课后可能无法重新选回“%1$s”，是否继续？</string>
+    <string name="course_select_succeeded">选课成功。</string>
+    <string name="course_drop_succeeded">退课成功。</string>
+    <string name="course_operation_failed">操作失败。</string>
+    <string name="course_search_failed">搜索失败。</string>
+
+    <!-- 学业功能搜索 -->
+    <string name="teacher_search_hint">按教师姓名查询</string>
+    <string name="academic_search_hint">按名称、教师、院系或课程编号搜索</string>
+
+    <!-- 成绩页搜索 -->
+    <string name="course_score_search">搜索成绩</string>
+    <string name="course_score_search_hint">课程名、课程编号、学期或成绩</string>
+    <string name="level_score_search">搜索等级考试</string>
+    <string name="level_score_search_hint">考试名称、日期或成绩</string>
 </resources>

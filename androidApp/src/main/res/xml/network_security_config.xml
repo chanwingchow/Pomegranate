@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网络安全配置。
+
+  默认禁止明文流量；只放行学校自建的 HTTP 服务：
+  - jwxt.gdufe.edu.cn：教务系统
+  - 2ketang.gdufe.edu.cn：第二课堂
+  - 100.64.13.17：校园网
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">jwxt.gdufe.edu.cn</domain>
+        <domain includeSubdomains="true">2ketang.gdufe.edu.cn</domain>
+        <domain includeSubdomains="true">100.64.13.17</domain>
+    </domain-config>
+</network-security-config>

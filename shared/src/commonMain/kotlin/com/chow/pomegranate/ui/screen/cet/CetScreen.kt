@@ -59,8 +59,10 @@ import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import com.conamobile.pdfkmp.viewer.PdfSource
 import com.conamobile.pdfkmp.viewer.PdfViewer
+import com.skydoves.cloudy.Sky
 import com.skydoves.cloudy.cloudy
 import com.skydoves.cloudy.rememberSky
+import com.skydoves.cloudy.sky
 import kotlinx.coroutines.launch
 import kotlinx.datetime.format.AmPmMarker
 import kotlinx.serialization.Serializable
@@ -103,6 +105,9 @@ private fun CetContentPreview() {
     }
 }
 
+/**
+ * CET 页内容。
+ */
 @Composable
 private fun CetContent(
     modifier: Modifier = Modifier,
@@ -128,7 +133,7 @@ private fun CetContent(
                 pagerState = pagerState,
                 isSuccessUiState = uiState is CetUiState.Success,
                 onBack = {
-                    backStack.removeLast()
+                    backStack.removeLastOrNull()
                 },
                 modifier = Modifier.cloudy(sky = sky),
             )
@@ -161,6 +166,7 @@ private fun CetContent(
                     },
                     tabs = tabs,
                     pagerState = pagerState,
+                    sky = sky,
                     contentPadding = contentPadding,
                 )
             }
@@ -169,9 +175,9 @@ private fun CetContent(
 }
 
 /**
- * CET 标签。
+ * CET 页标签。
  *
- * @property label 标签
+ * @property label 标签字符串资源
  */
 private enum class CetTab(
     val label: StringResource,
@@ -188,7 +194,7 @@ private enum class CetTab(
      */
     Details(
         label = Res.string.details,
-    ),
+    );
 }
 
 /**
@@ -266,6 +272,7 @@ private fun CetExamContent(
     onLoadPdfBytes: () -> Unit,
     tabs: List<CetTab>,
     pagerState: PagerState,
+    sky: Sky,
     contentPadding: PaddingValues,
 ) {
     LaunchedEffect(pagerState.currentPage) {
@@ -279,6 +286,9 @@ private fun CetExamContent(
 
     HorizontalPager(
         state = pagerState,
+        // 顶栏的毛玻璃要采样这里：滚动内容必须在顶栏下方延伸，
+        // 所以 sky 记在铺满整个内容区的 pager 上
+        modifier = Modifier.fillMaxSize().sky(sky = sky),
         verticalAlignment = Alignment.Top,
     ) { page ->
         val tab = tabs[page]

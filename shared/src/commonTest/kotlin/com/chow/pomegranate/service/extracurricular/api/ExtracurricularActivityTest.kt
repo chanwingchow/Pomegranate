@@ -1,12 +1,8 @@
 package com.chow.pomegranate.service.extracurricular.api
 
+import com.chow.pomegranate.LocalTestCredentials
 import com.chow.pomegranate.service.extracurricular.model.EventState
-import io.ktor.utils.io.readText
 import kotlinx.coroutines.runBlocking
-import kotlinx.io.SystemLineSeparator
-import kotlinx.io.buffered
-import kotlinx.io.files.Path
-import kotlinx.io.files.SystemFileSystem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -19,28 +15,17 @@ class ExtracurricularActivityTest {
     fun setUp() {
         extracurricularActivity = ExtracurricularActivity()
 
-        // 读取 local.properties 里面的用户配置
-        // user.name=学号
-        // user.password=密码
-        val properties = SystemFileSystem.source(Path("../local.properties"))
-            .buffered()
-            .readText()
-            .split(SystemLineSeparator)
-            .filter { it.startsWith("user") }
-            .associate {
-                val (key, value) = it.split("=")
-                key.trim() to value.trim()
-            }
-
-        username = properties["user.name"]!!
-        password = properties["user.extracurricularPassword"]!!
+        val credentials = LocalTestCredentials.extracurricular ?: return
+        username = credentials.userId
+        password = credentials.password
     }
 
     /**
      * 登录测试。
      */
     @Test
-    fun login() = runBlocking {
+    fun login() = runBlocking<Unit> {
+        if (!hasExtracurricularCredentials()) return@runBlocking
         extracurricularActivity.auth.login(username, password)
     }
 
@@ -48,7 +33,8 @@ class ExtracurricularActivityTest {
      * 测试。
      */
     @Test
-    fun getTranscript() = runBlocking {
+    fun getTranscript() = runBlocking<Unit> {
+        if (!hasExtracurricularCredentials()) return@runBlocking
         runWithLogin {
             val transcript = extracurricularActivity.achievement.getTranscript()
 
@@ -60,7 +46,8 @@ class ExtracurricularActivityTest {
      * 测试。
      */
     @Test
-    fun getTranscriptLogs() = runBlocking {
+    fun getTranscriptLogs() = runBlocking<Unit> {
+        if (!hasExtracurricularCredentials()) return@runBlocking
         runWithLogin {
             val logs = extracurricularActivity.achievement.getTranscriptLogs()
 
@@ -72,7 +59,8 @@ class ExtracurricularActivityTest {
      * 获取活动测试。
      */
     @Test
-    fun getEvents() = runBlocking {
+    fun getEvents() = runBlocking<Unit> {
+        if (!hasExtracurricularCredentials()) return@runBlocking
         runWithLogin {
             val events = extracurricularActivity.activity.getEvents()
 
@@ -84,7 +72,8 @@ class ExtracurricularActivityTest {
      * 获取我的活动测试。
      */
     @Test
-    fun getMyEvents() = runBlocking {
+    fun getMyEvents() = runBlocking<Unit> {
+        if (!hasExtracurricularCredentials()) return@runBlocking
         runWithLogin {
             val myEvents = extracurricularActivity.activity.getMyEvents(
                 state = EventState.Finished,
@@ -98,7 +87,8 @@ class ExtracurricularActivityTest {
      * 获取活动详情测试。
      */
     @Test
-    fun getEvent() = runBlocking {
+    fun getEvent() = runBlocking<Unit> {
+        if (!hasExtracurricularCredentials()) return@runBlocking
         runWithLogin {
             val basicEvent = extracurricularActivity.activity.run {
                 getEvents().firstOrNull()
@@ -117,3 +107,13 @@ class ExtracurricularActivityTest {
         block()
     }
 }
+
+/**
+ * 没有配置真实账号时跳过当前用例。
+ *
+ * 这些用例要连校园网并用真账号登录，CI 上必然失败；跳过才能让真实回归不被淹没。
+ * 必须写在 `@Test` 方法体内：JUnit 4 在 `@BeforeTest`/`@BeforeClass` 里抛出
+ * AssumptionViolatedException 会记成初始化失败，而不是 skipped。
+ */
+private fun hasExtracurricularCredentials(): Boolean =
+    LocalTestCredentials.extracurricular != null

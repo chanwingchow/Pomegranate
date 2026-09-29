@@ -1,5 +1,6 @@
 package com.chow.pomegranate.ui.screen.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,12 +8,15 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.twotone.Logout
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.twotone.AutoMode
 import androidx.compose.material.icons.twotone.DarkMode
@@ -32,6 +36,7 @@ import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
@@ -53,6 +59,7 @@ import com.chow.pomegranate.dev_by_chow
 import com.chow.pomegranate.ic_logo
 import com.chow.pomegranate.light
 import com.chow.pomegranate.logo
+import com.chow.pomegranate.session.SessionManager
 import com.chow.pomegranate.settings
 import com.chow.pomegranate.theme_mode
 import com.chow.pomegranate.tips
@@ -71,6 +78,10 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+
+/** 项目仓库地址。 */
+private const val REPOSITORY_URL = "https://github.com/chanwingchow/Pomegranate"
 
 /**
  * 设置页导航入口。
@@ -91,8 +102,12 @@ data object SettingsRoute : NavKey
  * 设置页。
  */
 @Composable
-private fun SettingsScreen() {
-    SettingsContent()
+private fun SettingsScreen(
+    viewModel: SettingsViewModel = koinViewModel(),
+) {
+    SettingsContent(
+        viewModel = viewModel,
+    )
 }
 
 @Preview
@@ -110,24 +125,28 @@ private fun SettingsContentPreview() {
 @Composable
 private fun SettingsContent(
     modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel? = null,
 ) {
     val backStack = LocalBackStack.current
+
+    // 打开项目仓库
+    val uriHandler = LocalUriHandler.current
 
     // 高斯模糊
     val sky = rememberSky()
 
     // 主题模式
-    var themeMode by remember { mutableStateOf(ThemeMode.Auto) }
+    val themeMode = viewModel?.themeMode?.collectAsState()?.value ?: ThemeMode.Auto
 
     // 周次
-    var week by remember { mutableIntStateOf(1) }
+    val week = viewModel?.week?.collectAsState()?.value ?: 0
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopBar(
                 onBack = {
-                    backStack.removeLast()
+                    backStack.removeLastOrNull()
                 },
                 modifier = Modifier.cloudy(sky = sky),
             )
@@ -141,7 +160,10 @@ private fun SettingsContent(
             item {
                 // 应用信息卡片
                 AppCard(
-                    onClick = {},
+                    onClick = {
+                        // 打开项目仓库
+                        uriHandler.openUri(REPOSITORY_URL)
+                    },
                 )
             }
 
@@ -149,7 +171,7 @@ private fun SettingsContent(
                 // 主题模式
                 ThemeModeSetting(
                     themeMode = themeMode,
-                    onThemeModeChange = { themeMode = it },
+                    onThemeModeChange = { viewModel?.setThemeMode(it) },
                 )
             }
 
@@ -157,9 +179,10 @@ private fun SettingsContent(
                 // 周次设置
                 WeekSetting(
                     week = week,
-                    onWeekChange = { week = it },
+                    onWeekChange = { viewModel?.setWeek(it) },
                 )
             }
+
         }
     }
 }
@@ -213,8 +236,9 @@ private fun AppCard(
                     Surface(
                         shape = MaterialTheme.shapes.small,
                     ) {
-                        Icon(
-                            painterResource(Res.drawable.ic_logo),
+                        // Logo（Image 不做主题染色，保留 logo 的渐变）
+                        Image(
+                            painter = painterResource(Res.drawable.ic_logo),
                             contentDescription = stringResource(Res.string.logo),
                             modifier = Modifier.size(28.dp),
                         )
@@ -241,7 +265,7 @@ private fun AppCard(
 
             // GitHub 仓库链接
             Text(
-                "https://github.com/chanwingchow/Pomegranate",
+                REPOSITORY_URL,
                 color = MaterialTheme.colorScheme.outlineVariant,
                 style = MaterialTheme.typography.labelSmall,
             )

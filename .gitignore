@@ -17,3 +17,10 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+hs_err_pid*.log
+
+# 签名文件与签名配置：泄露等于应用签名身份泄露（别人能签出冒充你的包）
+*.jks
+*.keystore
+keystore.properties
+signing.properties

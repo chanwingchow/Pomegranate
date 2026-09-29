@@ -6,8 +6,10 @@ plugins {
 
 kotlin {
     dependencies {
+        implementation(project.dependencies.platform(libs.koin.bom))
         implementation(libs.androidx.activity.compose)
         implementation(libs.compose.uiToolingPreview)
+        implementation(libs.koin.android)
 
         implementation(projects.shared)
     }

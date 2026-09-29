@@ -4,5 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- 扫码添加 OTP 账户 -->
+	<key>NSCameraUsageDescription</key>
+	<string>需要使用相机扫描二维码，以便添加 OTP 账户</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>需要访问相册，以便从二维码图片中添加 OTP 账户</string>
 </dict>
 </plist>

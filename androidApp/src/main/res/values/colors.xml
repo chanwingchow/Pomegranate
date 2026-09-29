@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      窗口背景（浅色）。Compose 首帧之前、Activity 因主题变化重建、以及转场时
+      露出来的都是它，所以必须和 Compose 主题的 background 一致，否则切主题会闪白。
+    -->
+    <color name="window_background">#FFFBFE</color>
+</resources>

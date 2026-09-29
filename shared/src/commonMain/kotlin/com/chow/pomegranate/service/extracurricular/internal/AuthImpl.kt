@@ -17,7 +17,7 @@ internal class AuthImpl(
     private val userId: MutableStateFlow<String?>,
     private val sessionId: MutableStateFlow<String?>,
 ) : ExtracurricularActivity.Auth {
-    override suspend fun login(userId: String, password: String) {
+    override suspend fun login(userId: String, password: String): String {
         val response = httpClient.submitForm(
             "/apps/common/login",
             parameters {
@@ -37,7 +37,19 @@ internal class AuthImpl(
 
         check(body.code == 200) { body.msg }
 
+        val id = body.data?.id ?: error("第二课堂登录未返回会话 ID。")
+
         this.userId.value = userId
-        sessionId.value = body.data?.id
+        sessionId.value = id
+
+        return id
+    }
+
+    override fun restore(
+        userId: String,
+        sessionId: String,
+    ) {
+        this.userId.value = userId
+        this.sessionId.value = sessionId
     }
 }

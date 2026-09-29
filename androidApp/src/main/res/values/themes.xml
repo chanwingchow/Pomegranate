@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      应用主题（浅色）。
+      之前直接用了 @android:style/Theme.Material.Light.NoActionBar —— 那是「只有浅色」的
+      系统主题，没有任何 values-night 覆盖，所以深色模式下：
+        1. 冷启动 / Activity 重建时的启动窗口是白的，切主题会闪一下白；
+        2. Compose 首帧之前、转场期间露出的窗口背景也是白的。
+      这里换成项目自己的主题，窗口背景跟着日/夜资源走（见 values-night/themes.xml）。
+    -->
+    <style name="Theme.Pomegranate" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:colorBackground">@color/window_background</item>
+    </style>
+</resources>
