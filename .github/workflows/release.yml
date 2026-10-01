@@ -46,7 +46,9 @@ jobs:
       - name: Install Android SDK
         run: |
           SDK_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("gradle/libs.versions.toml", "rb"))["versions"]["android-compileSdk"])')
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-$SDK_VERSION" "build-tools;${SDK_VERSION}.0.0"
+          # SDK 37 is published as android-37.0; build tools have an independent version.
+          if [[ "$SDK_VERSION" -ge 37 ]]; then SDK_PLATFORM="${SDK_VERSION}.0"; else SDK_PLATFORM="$SDK_VERSION"; fi
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-$SDK_PLATFORM" "build-tools;36.0.0"
       - name: Build Android APK
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -152,7 +154,7 @@ jobs:
       - name: Package simulator app
         run: |
           mkdir -p artifacts
-          ditto -c -k --sequesterRsrc --keepParent \
+          python .github/scripts/archive_directory.py \
             iosApp/build/Build/Products/Release-iphonesimulator/Pomegranate.app \
             "artifacts/Pomegranate-${RELEASE_VERSION}-ios-simulator-arm64.zip"
       - uses: actions/upload-artifact@v4
