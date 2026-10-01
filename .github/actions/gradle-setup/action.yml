@@ -1,0 +1,17 @@
+name: Gradle setup
+description: Set up the project's Java 21, Python and Gradle toolchain
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-java@v5
+      with:
+        distribution: jetbrains
+        java-version: '21'
+    - uses: gradle/actions/setup-gradle@v5
+      with:
+        cache-read-only: false
+    - shell: bash
+      run: chmod +x gradlew

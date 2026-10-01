@@ -22,7 +22,10 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.chow.pomegranate"
-            packageVersion = libs.versions.versionName.get()
+            packageVersion = providers.environmentVariable("PACKAGE_VERSION").orNull
+                ?: libs.versions.versionName.get()
+            // Include modules used through reflection by OCR and database dependencies.
+            includeAllModules = true
 
             macOS {
                 iconFile.set(project.file("src/main/resources/icons/Pomegranate.icns"))

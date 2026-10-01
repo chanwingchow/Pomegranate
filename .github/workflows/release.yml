@@ -1,0 +1,203 @@
+name: Tag release
+
+on:
+  push:
+    tags: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      package-version: ${{ steps.version.outputs.package_version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate tag and extract version
+        id: version
+        run: python3 .github/scripts/release_version.py
+
+  android:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/gradle-setup
+      - name: Apply release version
+        run: python .github/scripts/release_version.py --apply
+      - name: Install Android SDK
+        run: |
+          SDK_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("gradle/libs.versions.toml", "rb"))["versions"]["android-compileSdk"])')
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-$SDK_VERSION" "build-tools;${SDK_VERSION}.0.0"
+      - name: Build Android APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          : "${KEYSTORE_BASE64:?Missing ANDROID_KEYSTORE_BASE64}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Missing ANDROID_KEYSTORE_PASSWORD}"
+          : "${ANDROID_KEY_ALIAS:?Missing ANDROID_KEY_ALIAS}"
+          : "${ANDROID_KEY_PASSWORD:?Missing ANDROID_KEY_PASSWORD}"
+          mkdir -p artifacts
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          ./gradlew :androidApp:assembleRelease --stacktrace --no-configuration-cache
+          cp androidApp/build/outputs/apk/release/*-release.apk "artifacts/Pomegranate-${RELEASE_VERSION}-android-release.apk"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-android
+          path: artifacts/*.apk
+          if-no-files-found: error
+
+  desktop:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x64
+            task: packageDeb
+            extension: deb
+          - os: windows-2022
+            platform: windows-x64
+            task: packageMsi
+            extension: msi
+          - os: macos-15
+            platform: macos-arm64
+            task: packageDmg
+            extension: dmg
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      PACKAGE_VERSION: ${{ needs.prepare.outputs.package-version }}
+      PACKAGE_TASK: ${{ matrix.task }}
+      PACKAGE_EXTENSION: ${{ matrix.extension }}
+      PACKAGE_PLATFORM: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/gradle-setup
+      - name: Apply release version
+        run: python .github/scripts/release_version.py --apply
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
+      - name: Configure WiX
+        if: runner.os == 'Windows'
+        run: |
+          test -n "$WIX"
+          printf '%s\n' "${WIX}bin" >> "$GITHUB_PATH"
+      - name: Build desktop installer
+        run: ./gradlew ":desktopApp:$PACKAGE_TASK" --stacktrace
+      - name: Collect installer
+        run: python .github/scripts/collect_installer.py
+      - name: Build Windows portable application
+        if: runner.os == 'Windows'
+        run: ./gradlew :desktopApp:createDistributable --stacktrace
+      - name: Package Windows portable ZIP
+        if: runner.os == 'Windows'
+        run: python .github/scripts/package_windows_portable.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.platform }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  ios:
+    needs: prepare
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      PACKAGE_VERSION: ${{ needs.prepare.outputs.package-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/gradle-setup
+      - name: Apply release version
+        run: python .github/scripts/release_version.py --apply
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild build \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath iosApp/build \
+            CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="$PACKAGE_VERSION" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+      - name: Package simulator app
+        run: |
+          mkdir -p artifacts
+          ditto -c -k --sequesterRsrc --keepParent \
+            iosApp/build/Build/Products/Release-iphonesimulator/Pomegranate.app \
+            "artifacts/Pomegranate-${RELEASE_VERSION}-ios-simulator-arm64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-ios-simulator
+          path: artifacts/*.zip
+          if-no-files-found: error
+
+  publish:
+    needs: [prepare, android, desktop, ios]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          merge-multiple: true
+          path: artifacts
+      - name: Generate Chinese release notes
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          RELEASE_NOTES_BASE_URL: ${{ vars.RELEASE_NOTES_BASE_URL || 'https://api.deepseek.com' }}
+          RELEASE_NOTES_MODEL: ${{ vars.RELEASE_NOTES_MODEL || 'deepseek-flash' }}
+        run: python3 .github/scripts/release_notes.py --output release-notes.md
+      - name: Add checksums
+        run: |
+          cd artifacts
+          sha256sum ./*.apk ./*.msi ./*.dmg ./*.deb ./*.zip > SHA256SUMS.txt
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" artifacts/* --clobber
+          else
+            options=()
+            if [[ "$PRERELEASE" == 'true' ]]; then options+=(--prerelease); fi
+            gh release create "$RELEASE_TAG" artifacts/* \
+              --verify-tag --title "小石榴 $RELEASE_TAG" \
+              --notes-file release-notes.md "${options[@]}"
+          fi

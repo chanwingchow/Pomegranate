@@ -2,6 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+<p align="center">
+  <img src="shared/src/commonMain/composeResources/drawable/ic_logo.png" alt="小石榴 Logo" width="128" />
+</p>
+
 > 小石榴是一款直连学校官网的**非官方**广财教务系统客户端，由广财 21 级某不知名电商学长开发维护，无广告、无付费功能。
 > 如果方便的话可以点一下仓库的星标，这是对项目最大的支持。
 
@@ -10,17 +14,28 @@
 > 新的小石榴与[旧版](https://github.com/Kiteio/Punica)可以并存，重要的操作建议在旧版完成。
 > 如有问题，请新建 issues 或发送邮箱 `changwingchow@163.com`。
 
-## 支持平台
-
-- Android
-- iOS（仍在探索中）
-- Desktop
-
 ## 数据与隐私
 
 - 软件所有代码开源。
 - 应用内的数据都存储在本地设备。
 - 应用会直接访问学校相关服务，不经自建服务器。
+
+## 支持平台
+
+### Android
+
+- `Pomegranate-x.x.x-android-release.apk`：正式签名安装包。
+
+### Desktop
+
+- `Pomegranate-x.x.x-windows-x64.msi`：Windows 安装包。
+- `Pomegranate-x.x.x-windows-x64-portable.zip`：Windows 免安装包。
+- `Pomegranate-x.x.x-macos-arm64.dmg`：Apple Silicon Mac 安装包。
+- `Pomegranate-x.x.x-linux-x64.deb`：Linux 安装包。
+
+### iOS
+
+- `Pomegranate-x.x.x-ios-simulator-arm64.zip`：模拟器包，不能安装到 iPhone。
 
 ## 功能
 
