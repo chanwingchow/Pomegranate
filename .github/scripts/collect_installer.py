@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 
 extension = os.environ['PACKAGE_EXTENSION']
-files = list(Path('desktopApp/build/compose/binaries').rglob(f'*.{extension}'))
+files = list(Path('desktopApp/build/compose/binaries/main-release').rglob(f'*.{extension}'))
 if len(files) != 1:
     raise RuntimeError(f'Expected one {extension} installer, found {len(files)}')
 Path('artifacts').mkdir(exist_ok=True)

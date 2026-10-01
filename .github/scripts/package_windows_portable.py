@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from archive_directory import archive_directory
 
-image_root = Path('desktopApp/build/compose/binaries/main/app')
+image_root = Path('desktopApp/build/compose/binaries/main-release/app')
 applications = [path for path in image_root.iterdir() if path.is_dir() and list(path.glob('*.exe'))]
 if len(applications) != 1:
     raise RuntimeError(f'Expected one Windows application image, found {len(applications)}')
