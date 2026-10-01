@@ -23,7 +23,7 @@ android {
         applicationId = "com.chow.pomegranate"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = providers.environmentVariable("ANDROID_VERSION_CODE").orNull?.toInt() ?: 1
+        versionCode = providers.environmentVariable("ANDROID_VERSION_CODE").orNull?.toInt() ?: 2
         versionName = libs.versions.versionName.get()
     }
     packaging {
