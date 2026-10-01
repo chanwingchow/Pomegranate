@@ -1,6 +1,7 @@
 # 小石榴 - 广财 GDUFE 教务系统软件
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![最新版本](https://img.shields.io/github/v/release/chanwingchow/Pomegranate?label=最新版本&color=ff7059)](https://github.com/chanwingchow/Pomegranate/releases/latest)
 
 <p align="center">
   <img src="shared/src/commonMain/composeResources/drawable/ic_logo.png" alt="小石榴 Logo" width="128" />
