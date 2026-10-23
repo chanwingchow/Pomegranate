@@ -164,6 +164,7 @@
     <string name="gdufe_blackboard">毕博平台</string>
     <string name="gdufe_name">广财通</string>
     <string name="open_in_browser">在浏览器打开</string>
+    <string name="open_link_failed">无法打开链接，请检查是否已安装浏览器或相关应用。</string>
 
     <!-- 考试安排页 -->
     <string-array name="days_of_week">

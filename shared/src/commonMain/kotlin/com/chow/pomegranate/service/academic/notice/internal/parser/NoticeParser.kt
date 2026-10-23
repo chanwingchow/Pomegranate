@@ -25,7 +25,7 @@ internal object NoticeParser {
         notice: BasicNotice,
         lazyRequestUrl: () -> Url,
     ): Notice = withContext(Dispatchers.Default) {
-        val document = Ksoup.parse(html)
+        val document = Ksoup.parse(html, baseUri = lazyRequestUrl().toString())
 
         val div = document.getElementById("d-container")!!
 
@@ -33,6 +33,12 @@ internal object NoticeParser {
         val iframe = div.selectFirst(Evaluator.Class("wp_pdf_player"))
 
         if (iframe == null) {
+            // 正文附件通常使用 /_upload/... 相对地址，交给系统前必须补全。
+            div.select("a[href]").forEach { link ->
+                val absoluteUrl = link.absUrl("href")
+                if (absoluteUrl.isNotBlank()) link.attr("href", absoluteUrl)
+            }
+
             return@withContext Notice.Html(
                 title = notice.title,
                 date = notice.date,

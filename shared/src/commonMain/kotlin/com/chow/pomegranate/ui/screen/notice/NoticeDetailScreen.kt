@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,12 +31,14 @@ import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.academic_notice
 import com.chow.pomegranate.open_in_browser
+import com.chow.pomegranate.open_link_failed
 import com.chow.pomegranate.repository.NoticeDetail
 import com.chow.pomegranate.repository.NoticeRepository
 import com.chow.pomegranate.service.academic.notice.model.BasicNotice
 import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.ErrorContent
 import com.chow.pomegranate.ui.component.LoadingContent
+import com.chow.pomegranate.ui.component.LocalSnackbarHostState
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
@@ -135,6 +138,16 @@ private fun NoticeDetailScreen(
 ) {
     val backStack = LocalBackStack.current
     val uriHandler = LocalUriHandler.current
+    val snackbarHostState = LocalSnackbarHostState.current
+    val scope = rememberCoroutineScope()
+    val openLinkFailedMessage = stringResource(Res.string.open_link_failed)
+    val openLink: (String) -> Unit = { url ->
+        try {
+            uriHandler.openUri(url)
+        } catch (_: Exception) {
+            scope.launch { snackbarHostState.showSnackbar(openLinkFailedMessage) }
+        }
+    }
 
     // UI 状态
     val uiState by viewModel.uiState.collectAsState()
@@ -159,7 +172,7 @@ private fun NoticeDetailScreen(
                 actions = {
                     // 在浏览器打开
                     FilledTonalIconButton(
-                        onClick = { uriHandler.openUri(notice.urlString) },
+                        onClick = { openLink(notice.urlString) },
                     ) {
                         Icon(
                             Icons.TwoTone.OpenInBrowser,
@@ -182,7 +195,7 @@ private fun NoticeDetailScreen(
 
             is NoticeDetailUiState.Success -> NoticeDetailContent(
                 detail = state.detail,
-                onOpenInBrowser = uriHandler::openUri,
+                onOpenInBrowser = openLink,
                 contentPadding = contentPadding,
             )
         }
@@ -241,6 +254,7 @@ private fun NoticeDetailContent(
                 // HTML 正文
                 HtmlText(
                     text = detail.html,
+                    onUriClick = onOpenInBrowser,
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
