@@ -4,6 +4,9 @@ package com.chow.pomegranate.data.local
  * 应用偏好键。
  */
 object PreferenceKeys {
+    /** 使用本地模拟教务服务。 */
+    const val DEMO_MODE = "demo_mode"
+
     /** 主题模式，取值为 `ThemeMode` 的下标。 */
     const val THEME_MODE = "theme_mode"
 

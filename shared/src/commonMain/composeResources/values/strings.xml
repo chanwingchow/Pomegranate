@@ -1,4 +1,7 @@
 <resources>
+    <string name="demo_mode">演示模式</string>
+    <string name="demo_badge">演示</string>
+
     <string name="app_name">小石榴</string>
     <string name="app_poem">人生若只如初见，何事秋风悲画扇。</string>
 

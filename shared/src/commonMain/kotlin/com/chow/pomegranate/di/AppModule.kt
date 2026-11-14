@@ -6,9 +6,16 @@ import com.chow.pomegranate.data.local.OtpAccountDao
 import com.chow.pomegranate.data.local.UserDao
 import com.chow.pomegranate.data.local.createAppDatabase
 import com.chow.pomegranate.service.academic.affairs.api.AcademicAffairs
+import com.chow.pomegranate.service.academic.affairs.demo.MockAcademicAffairs
+import com.chow.pomegranate.service.academic.affairs.internal.SwitchingAcademicAffairs
+import com.chow.pomegranate.repository.DemoModeRepository
+import com.chow.pomegranate.session.DemoSessionManager
+import com.chow.pomegranate.session.SessionManagerImpl
 import com.chow.pomegranate.service.academic.notice.api.AcademicNotice
 import com.chow.pomegranate.service.cet.api.CET
 import com.chow.pomegranate.service.extracurricular.api.ExtracurricularActivity
+import com.chow.pomegranate.service.extracurricular.demo.MockExtracurricularActivity
+import com.chow.pomegranate.service.extracurricular.internal.SwitchingExtracurricularActivity
 import com.chow.pomegranate.service.wallpaper.Wallpaper
 import com.chow.pomegranate.session.CookieStorage
 import com.chow.pomegranate.session.SecureStore
@@ -70,7 +77,21 @@ class AppModule {
     fun secureStore(): SecureStore = createSecureStore()
 
     @Singleton
-    fun academicAffairs(client: HttpClient): AcademicAffairs = AcademicAffairs(client)
+    fun academicAffairs(
+        client: HttpClient,
+        demo: MockAcademicAffairs,
+        mode: DemoModeRepository,
+    ): AcademicAffairs = SwitchingAcademicAffairs(AcademicAffairs(client), demo, mode)
+
+    @Singleton
+    fun mockAcademicAffairs(): MockAcademicAffairs = MockAcademicAffairs()
+
+    @Singleton
+    fun sessionManager(
+        real: SessionManagerImpl,
+        demo: MockAcademicAffairs,
+        mode: DemoModeRepository,
+    ): SessionManager = DemoSessionManager(real, demo, mode)
 
     /**
      * 供登录、登出与验证码使用的教务客户端实例。
@@ -98,7 +119,8 @@ class AppModule {
         academicAffairs.academic
 
     @Singleton
-    fun extracurricularActivity(): ExtracurricularActivity = ExtracurricularActivity()
+    fun extracurricularActivity(mode: DemoModeRepository): ExtracurricularActivity =
+        SwitchingExtracurricularActivity(ExtracurricularActivity(), MockExtracurricularActivity(), mode)
 
     @Singleton
     fun academicNotice(): AcademicNotice = AcademicNotice()

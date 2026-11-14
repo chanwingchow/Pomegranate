@@ -2,6 +2,12 @@ package com.chow.pomegranate
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -12,6 +18,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
+import androidx.compose.material3.CircularProgressIndicator
+import com.chow.pomegranate.repository.DemoModeRepository
+import com.chow.pomegranate.ui.component.DemoModeBadge
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -124,96 +135,119 @@ fun App(
         },
     ) {
         PomegranateExpressiveTheme(onThemeResolved = onThemeResolved) {
-            // 弹窗场景必须排在非覆盖场景之前
-            val dialogSceneStrategy = remember { DialogSceneStrategy<NavKey>() }
-            // 列表-详情自适应：宽屏并排，窄屏单栏
-            val listDetailSceneStrategy = rememberListDetailSceneStrategy<NavKey>()
-            val snackbarHostState = remember { SnackbarHostState() }
-            val backStack = rememberNavBackStack(
-                configuration = savedStateConfiguration,
-                MainRoute,
-            )
-
-            // 会话管理器
-            val sessionManager = koinInject<SessionManager>()
-            val sessionState by sessionManager.state.collectAsState()
-
-            // 登录过期提示
-            val sessionExpiredMessage = stringResource(Res.string.session_expired)
-
-            // 启动时自动登录
-            LaunchedEffect(Unit) {
-                sessionManager.autoLogin()
-            }
-
-            // 登录状态过期时回到登录页
-            LaunchedEffect(sessionState) {
-                if (sessionState is SessionState.Expired) {
-                    // 从栈中移除已有的登录页，避免重复添加
-                    backStack.removeAll { it is LoginRoute }
-                    backStack.add(LoginRoute)
-
-                    snackbarHostState.showSnackbar(
-                        message = sessionExpiredMessage,
-                    )
+            val demoModeRepository = koinInject<DemoModeRepository>()
+            val demoEnabled by demoModeRepository.enabled.collectAsState()
+            val modeSnackbar = remember { SnackbarHostState() }
+            LaunchedEffect(Unit) { demoModeRepository.isEnabled() }
+            if (demoEnabled == null) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
+                return@PomegranateExpressiveTheme
             }
 
-            CompositionLocalProvider(
-                LocalBackStack provides backStack,
-                LocalSnackbarHostState provides snackbarHostState,
-            ) {
-                // 根布局自己铺主题背景色：NavDisplay 转场时两侧场景可能都还没画上，
-                // 不铺的话会直接露出窗口背景（深色模式下就是那一闪的白）
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
-                ) {
-                    NavDisplay(
-                        backStack = backStack,
-                        onBack = { backStack.popDestination() },
-                        sceneStrategies = listOf(dialogSceneStrategy, listDetailSceneStrategy),
-                        entryDecorators = listOf(
-                            rememberSaveableStateHolderNavEntryDecorator(),
-                            rememberViewModelStoreNavEntryDecorator(),
-                        ),
-                        entryProvider = entryProvider {
-                            // 主页
-                            mainEntry()
-                            // 设置页
-                            settingsEntry()
-                            // 登录页
-                            loginEntry()
-                            // OTP 页
-                            otpEntry()
-                            // 紧急电话页
-                            contactEntry()
-                            // 教学通知页
-                            noticeEntry()
-                            // 教学通知详情页
-                            noticeDetailEntry()
-                            // 常用网站页
-                            websitesEntry()
-                            // 考试安排页
-                            examEntry()
-                            // CET 页
-                            cetEntry()
-                            // 课程成绩页
-                            transcriptEntry()
-                            // 账号管理弹窗
-                            accountEntry()
-                            // 学业功能页和详情弹窗
-                            academicFeatureEntries()
-                            // 培养方案页
-                            academicProgramEntry()
-                        },
-                    )
+            // 切换时释放旧页面的 ViewModel 与未完成请求，避免保留另一模式的数据。
+            key(demoEnabled) {
+                // 弹窗场景必须排在非覆盖场景之前
+                val dialogSceneStrategy = remember { DialogSceneStrategy<NavKey>() }
+                // 列表-详情自适应：宽屏并排，窄屏单栏
+                val listDetailSceneStrategy = rememberListDetailSceneStrategy<NavKey>()
+                val snackbarHostState = modeSnackbar
+                val backStack = rememberNavBackStack(
+                    configuration = savedStateConfiguration,
+                    MainRoute,
+                )
 
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
+                // 会话管理器
+                val sessionManager = koinInject<SessionManager>()
+                val sessionState by sessionManager.state.collectAsState()
+
+                // 登录过期提示
+                val sessionExpiredMessage = stringResource(Res.string.session_expired)
+
+                // 启动时自动登录
+                LaunchedEffect(Unit) {
+                    sessionManager.autoLogin()
+                }
+
+                // 登录状态过期时回到登录页
+                LaunchedEffect(sessionState) {
+                    if (demoEnabled != true && sessionState is SessionState.Expired) {
+                        // 从栈中移除已有的登录页，避免重复添加
+                        backStack.removeAll { it is LoginRoute }
+                        backStack.add(LoginRoute)
+
+                        snackbarHostState.showSnackbar(
+                            message = sessionExpiredMessage,
+                        )
+                    }
+                }
+
+                CompositionLocalProvider(
+                    LocalBackStack provides backStack,
+                    LocalSnackbarHostState provides snackbarHostState,
+                ) {
+                    // 根布局自己铺主题背景色：NavDisplay 转场时两侧场景可能都还没画上，
+                    // 不铺的话会直接露出窗口背景（深色模式下就是那一闪的白）
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        NavDisplay(
+                            backStack = backStack,
+                            onBack = { backStack.popDestination() },
+                            sceneStrategies = listOf(dialogSceneStrategy, listDetailSceneStrategy),
+                            entryDecorators = listOf(
+                                rememberSaveableStateHolderNavEntryDecorator(),
+                                rememberViewModelStoreNavEntryDecorator(),
+                            ),
+                            entryProvider = entryProvider {
+                                // 主页
+                                mainEntry()
+                                // 设置页
+                                settingsEntry()
+                                // 登录页
+                                loginEntry()
+                                // OTP 页
+                                otpEntry()
+                                // 紧急电话页
+                                contactEntry()
+                                // 教学通知页
+                                noticeEntry()
+                                // 教学通知详情页
+                                noticeDetailEntry()
+                                // 常用网站页
+                                websitesEntry()
+                                // 考试安排页
+                                examEntry()
+                                // CET 页
+                                cetEntry()
+                                // 课程成绩页
+                                transcriptEntry()
+                                // 账号管理弹窗
+                                accountEntry()
+                                // 学业功能页和详情弹窗
+                                academicFeatureEntries()
+                                // 培养方案页
+                                academicProgramEntry()
+                            },
+                        )
+
+                        // 只在根布局绘制一次，所有页面沿用原来的导航与内容布局。
+                        if (demoEnabled == true) {
+                            DemoModeBadge(
+                                Modifier.align(Alignment.TopEnd)
+                                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.End))
+                                    .padding(top = 2.dp, end = 8.dp),
+                            )
+                        }
+
+                        SnackbarHost(
+                            hostState = snackbarHostState,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                    }
                 }
             }
         }

@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TooltipAnchorPosition
@@ -45,6 +46,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,6 +59,7 @@ import com.chow.pomegranate.app_name
 import com.chow.pomegranate.auto
 import com.chow.pomegranate.dark
 import com.chow.pomegranate.dev_by_chow
+import com.chow.pomegranate.demo_mode
 import com.chow.pomegranate.ic_logo
 import com.chow.pomegranate.light
 import com.chow.pomegranate.logo
@@ -140,6 +144,9 @@ private fun SettingsContent(
 
     // 周次
     val week = viewModel?.week?.collectAsState()?.value ?: 0
+    val demoMode = viewModel?.demoMode?.collectAsState()?.value == true
+    val demoModeLabel = stringResource(Res.string.demo_mode)
+    val demoModeError = viewModel?.demoModeError?.collectAsState()?.value
 
     Scaffold(
         modifier = modifier,
@@ -173,6 +180,26 @@ private fun SettingsContent(
                     themeMode = themeMode,
                     onThemeModeChange = { viewModel?.setThemeMode(it) },
                 )
+            }
+
+            item {
+                ElevatedCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(Res.string.demo_mode), style = MaterialTheme.typography.titleMedium)
+                            demoModeError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                        }
+                        Switch(
+                            modifier = Modifier.semantics { contentDescription = demoModeLabel },
+                            checked = demoMode,
+                            onCheckedChange = { viewModel?.setDemoMode(it) },
+                        )
+                    }
+                }
             }
 
             item {

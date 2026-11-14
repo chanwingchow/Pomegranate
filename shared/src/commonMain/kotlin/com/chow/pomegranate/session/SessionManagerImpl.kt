@@ -39,7 +39,7 @@ import kotlin.time.Clock
  * @param ocrEngine 验证码识别引擎
  * @param secureStore 平台安全存储
  */
-@Single
+@Single(binds = [SessionManagerImpl::class])
 class SessionManagerImpl(
     private val auth: AcademicAffairs.Auth,
     private val extracurricularActivity: ExtracurricularActivity,
