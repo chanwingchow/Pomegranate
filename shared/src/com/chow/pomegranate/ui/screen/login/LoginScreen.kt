@@ -51,6 +51,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun EntryProviderScope<NavKey>.loginEntry() {
     entry<LoginRoute> { LoginScreen() }
     entry<SecondClassLoginRoute> { LoginScreen(initialTarget = LoginTarget.SecondClassroom) }
+    entry<ConnectionSettingsRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { ConnectionSettingsSheet() }
     entry<LoginErrorRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { route ->
         val backStack = LocalBackStack.current
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp),
@@ -92,6 +93,9 @@ private fun LoginScreen(viewModel: LoginViewModel = koinViewModel(), initialTarg
     val loggingIn by viewModel.isLoggingIn.collectAsState()
     val loadingCaptcha by viewModel.isLoadingCaptcha.collectAsState()
     val bytes by viewModel.captcha.collectAsState()
+    val connection = org.koin.compose.koinInject<com.chow.pomegranate.network.WebVpnSession>()
+    val connectionState by connection.state.collectAsState()
+    LaunchedEffect(target, connectionState.policy, connectionState.stage == com.chow.pomegranate.network.WebVpnStage.Connected) { viewModel.connectionChanged(target) }
     LaunchedEffect(viewModel) {
         viewModel.errors.collectLatest { error ->
             val message = if (error.message == Res.string.captcha) "验证码加载失败" else getString(error.message)
@@ -103,7 +107,6 @@ private fun LoginScreen(viewModel: LoginViewModel = koinViewModel(), initialTarg
         }
     }
     val bitmap = remember(bytes) { bytes?.let { runCatching { it.decodeToImageBitmap() }.getOrNull() } }
-    LaunchedEffect(target) { viewModel.selectTarget(target) }
     val submit = {
         focus.clearFocus()
         viewModel.login(username.text.toString(), password.text.toString(), secondPassword.text.toString(),
@@ -137,6 +140,7 @@ private fun LoginScreen(viewModel: LoginViewModel = koinViewModel(), initialTarg
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding), contentAlignment = Alignment.TopCenter) {
             LazyColumn(Modifier.widthIn(max = 520.dp).fillMaxSize(),
                 contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item { ConnectionModeCard() }
                 item {
                     Box {
                         PomStateTextField(username, fieldModifier(0), label = stringResource(Res.string.username), placeholder = "输入学号",

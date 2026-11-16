@@ -31,6 +31,7 @@ import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Singleton
+import com.chow.pomegranate.network.*
 
 /** 认证用的教务客户端限定符，见 [AppModule.authAcademicAffairs]。 */
 const val AUTH_ACADEMIC_AFFAIRS = "authAcademicAffairs"
@@ -54,21 +55,29 @@ class AppModule {
     @Singleton
     fun cookieStorage(): CookieStorage = CookieStorage()
 
+    @Singleton
+    fun webVpnRouter(): WebVpnUrlRouter = WebVpnUrlRouter()
+
+    @Singleton
+    fun webVpnSession(preferences: com.chow.pomegranate.repository.AppPreferenceRepository, secureStore: SecureStore,
+        router: WebVpnUrlRouter): WebVpnSession = WebVpnSession(PreferenceWebVpnPersistence(preferences, secureStore), router)
+
     /**
      * 原始客户端，用于登录、登出与会话校验，避免递归重新登录。
      *
      * 包装为 [SessionApiClient]，以免与业务客户端同类型冲突。
      */
     @Singleton
-    fun sessionApiClient(cookieStorage: CookieStorage): SessionApiClient =
-        SessionApiClient(baseAcademicAffairsHttpClient(cookieStorage))
+    fun sessionApiClient(cookieStorage: CookieStorage, webVpn: WebVpnSession): SessionApiClient =
+        SessionApiClient(baseAcademicAffairsHttpClient(cookieStorage, webVpn))
 
     /** 业务客户端，登录失效时自动重新登录并重放请求。 */
     @Singleton
     fun httpClient(
         cookieStorage: CookieStorage,
         sessionManager: Lazy<SessionManager>,
-    ): HttpClient = sessionAcademicAffairsHttpClient(cookieStorage, sessionManager)
+        webVpn: WebVpnSession,
+    ): HttpClient = sessionAcademicAffairsHttpClient(cookieStorage, sessionManager, webVpn)
 
     @Singleton
     fun ocrEngine(): OcrEngine = createCaptchaOcrEngine()
@@ -104,8 +113,8 @@ class AppModule {
      */
     @Singleton
     @Named(value = AUTH_ACADEMIC_AFFAIRS)
-    fun authAcademicAffairs(cookieStorage: CookieStorage): AcademicAffairs =
-        AcademicAffairs(baseAcademicAffairsHttpClient(cookieStorage))
+    fun authAcademicAffairs(cookieStorage: CookieStorage, webVpn: WebVpnSession): AcademicAffairs =
+        AcademicAffairs(baseAcademicAffairsHttpClient(cookieStorage, webVpn))
 
     /** 认证模块，供会话管理器使用；必须绕过会话校验插件。 */
     @Singleton
@@ -119,8 +128,8 @@ class AppModule {
         academicAffairs.academic
 
     @Singleton
-    fun extracurricularActivity(mode: DemoModeRepository): ExtracurricularActivity =
-        SwitchingExtracurricularActivity(ExtracurricularActivity(), MockExtracurricularActivity(), mode)
+    fun extracurricularActivity(mode: DemoModeRepository, webVpn: WebVpnSession): ExtracurricularActivity =
+        SwitchingExtracurricularActivity(ExtracurricularActivity(webVpn), MockExtracurricularActivity(), mode)
 
     @Singleton
     fun academicNotice(): AcademicNotice = AcademicNotice()

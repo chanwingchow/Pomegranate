@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.Logout
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Domain
 import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.compose.runtime.LaunchedEffect
@@ -183,6 +184,9 @@ private fun SettingsContent(
     val demoMode = viewModel?.demoMode?.collectAsState()?.value == true
     val demoModeLabel = stringResource(Res.string.demo_mode)
     val demoModeError = viewModel?.demoModeError?.collectAsState()?.value
+    val connection = if (viewModel != null) org.koin.compose.koinInject<com.chow.pomegranate.network.WebVpnSession>() else null
+    val connectionState = connection?.state?.collectAsState()?.value
+    LaunchedEffect(connection) { connection?.initialize() }
 
     Scaffold(
         modifier = modifier,
@@ -224,6 +228,12 @@ private fun SettingsContent(
                 PomSettingRow(stringResource(Res.string.week), Icons.Rounded.CalendarMonth, 2,
                     trailing = { Text("第 $week 周", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) },
                     onClick = { backStack.add(WeekSettingRoute(week)) })
+            }
+
+            item {
+                PomSettingRow("连接方式", Icons.Rounded.Language, 3,
+                    trailing = { Text(connectionState?.policy?.label ?: "自动", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) },
+                    onClick = { backStack.add(com.chow.pomegranate.ui.screen.login.ConnectionSettingsRoute) })
             }
 
             item {

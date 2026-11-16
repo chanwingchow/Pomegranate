@@ -13,6 +13,7 @@ import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
+import com.chow.pomegranate.network.*
 
 /** 教务系统地址。 */
 private const val ACADEMIC_AFFAIRS_URL = "http://jwxt.gdufe.edu.cn"
@@ -22,15 +23,16 @@ private const val ACADEMIC_AFFAIRS_URL = "http://jwxt.gdufe.edu.cn"
  *
  * @param cookieStorage Cookie 仓库，由会话层统一持久化
  */
-private fun HttpClientConfig<*>.configureAcademicAffairs(cookieStorage: CookiesStorage) {
+private fun HttpClientConfig<*>.configureAcademicAffairs(cookieStorage: CookiesStorage, webVpn: WebVpnSession? = null) {
     // 默认请求
     defaultRequest {
         url(ACADEMIC_AFFAIRS_URL)
     }
     // Cookie
     install(HttpCookies) {
-        storage = cookieStorage
+        storage = if (webVpn != null && cookieStorage is CookieStorage) ServiceCookieStorage(cookieStorage, webVpn.cookies, webVpn.router) else cookieStorage
     }
+    if (webVpn != null) installServiceTransport(webVpn.router, webVpn::connection, { webVpn.identity }, webVpn::fallback, webVpn::expired, webVpn::saveCookies)
     // 超时：Ktor 默认不设超时，慢响应或连接挂死时界面会一直转圈。
     // 教务是校园网内网服务，整体 20 秒足够；个别大接口按需单独放宽。
     install(HttpTimeout) {
@@ -60,8 +62,8 @@ private fun HttpClientConfig<*>.configureAcademicAffairs(cookieStorage: CookiesS
  *
  * @param cookieStorage Cookie 仓库
  */
-fun baseAcademicAffairsHttpClient(cookieStorage: CookiesStorage): HttpClient = HttpClient {
-    configureAcademicAffairs(cookieStorage)
+fun baseAcademicAffairsHttpClient(cookieStorage: CookiesStorage, webVpn: WebVpnSession? = null): HttpClient = HttpClient {
+    configureAcademicAffairs(cookieStorage, webVpn)
 }
 
 /**
@@ -75,10 +77,11 @@ fun baseAcademicAffairsHttpClient(cookieStorage: CookiesStorage): HttpClient = H
 fun sessionAcademicAffairsHttpClient(
     cookieStorage: CookiesStorage,
     sessionManager: Lazy<SessionManager>,
+    webVpn: WebVpnSession? = null,
 ): HttpClient = HttpClient {
-    configureAcademicAffairs(cookieStorage)
-
+    // 先等待登录，再由网络层选择连接并绑定当前账号版本。
     installSessionCheck(sessionManager)
+    configureAcademicAffairs(cookieStorage, webVpn)
 
     // 会话校验内部会重新登录，留给它的时间必须覆盖一次完整登录（含验证码识别）
     install(HttpTimeout) {
@@ -109,6 +112,9 @@ private fun HttpClientConfig<*>.installSessionCheck(sessionManager: Lazy<Session
             var call = proceed(request)
 
             if (!call.response.isLoginPage()) return@on call
+
+            // 选退课即便使用 GET 也有副作用，不因登录态/连接变化自动重放。
+            if (isCourseMutation(request.serviceUrl())) throw SessionExpiredException()
 
             // 登录已过期，重新登录后重放一次
             runCatching { sessionManager.value.refresh() }

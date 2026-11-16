@@ -17,6 +17,7 @@ dependencies:
   - $libs.androidx.lifecycle.runtimeCompose
   - $libs.kotlinx.datetime
   - $libs.ktor.client.core
+  - $libs.cryptography.core
   - $libs.ktor.client.content.negotiation
   - $libs.ktor.serialization.kotlinx.json
   - $libs.kotlinx.serialization.json
@@ -49,6 +50,7 @@ dependencies:
   - $libs.sqlite.bundled
 
 dependencies@android:
+  - $libs.cryptography.jdk
   - $libs.compose.uiTooling: runtime-only
   - $libs.koin.android
   - $libs.ktor.client.okhttp
@@ -62,14 +64,17 @@ dependencies@android:
   - cz.adaptech.tesseract4android:tesseract4android:4.9.0@aar
 
 dependencies@jvm:
+  - $libs.cryptography.jdk
   - $libs.ktor.client.okhttp
   - $libs.tess4j
   - $libs.zxing.core
 
 dependencies@ios:
+  - $libs.cryptography.apple
   - $libs.ktor.client.darwin
 
 test-dependencies:
+  - $libs.ktor.client.mock
   - $libs.kotlin.test
   - $libs.kotlinx.coroutines.test
 

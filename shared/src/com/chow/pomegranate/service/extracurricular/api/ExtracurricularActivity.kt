@@ -13,16 +13,23 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import com.chow.pomegranate.network.*
+import com.chow.pomegranate.session.CookieStorage
+import io.ktor.client.plugins.cookies.HttpCookies
 
 /**
  * 第二课堂。
  */
-fun ExtracurricularActivity(): ExtracurricularActivity {
+fun ExtracurricularActivity(webVpn: WebVpnSession? = null): ExtracurricularActivity {
     return ExtracurricularActivityImpl(
         httpClient = HttpClient {
             // 默认请求
             defaultRequest {
                 url("http://2ketang.gdufe.edu.cn")
+            }
+            if (webVpn != null) {
+                install(HttpCookies) { storage = ServiceCookieStorage(CookieStorage(), webVpn.cookies, webVpn.router) }
+                installServiceTransport(webVpn.router, webVpn::connection, { webVpn.identity }, webVpn::fallback, webVpn::expired, webVpn::saveCookies)
             }
             install(HttpTimeout) {
                 requestTimeoutMillis = 20_000

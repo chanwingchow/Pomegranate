@@ -1,6 +1,9 @@
 package com.chow.pomegranate.service.academic.affairs.internal
 
 import io.ktor.http.Cookie
+import io.ktor.http.CookieEncoding
+import io.ktor.util.date.GMTDate
+import com.chow.pomegranate.session.HOST_ONLY_COOKIE
 import io.ktor.http.decodeURLQueryComponent
 import io.ktor.http.encodeURLParameter
 
@@ -17,14 +20,13 @@ private const val FALSE_MARKER = "-"
 private const val TRUE_MARKER = "+"
 
 /** 单条 Cookie 的字段数量。 */
-private const val FIELD_COUNT = 6
+private const val FIELD_COUNT = 9
 
 /**
  * 将 [cookies] 编码为可持久化的字符串。
  *
  * 每条 Cookie 占一行，字段以制表符分隔；域名、路径与 Cookie 值通过 URL 编码转义，
- * 因此可以安全地往返解析。过期时间不参与持久化：会话 Cookie 由服务端续期，
- * 客户端保留过期时间只会让失效的会话更难恢复。
+ * 因此可以安全地往返解析。保留过期时间、编码、host-only 标记，兼容旧六字段记录。
  */
 internal fun encodeCookies(cookies: List<Cookie>): String = cookies.joinToString("$RECORD_SEPARATOR") { cookie ->
     listOf(
@@ -34,6 +36,9 @@ internal fun encodeCookies(cookies: List<Cookie>): String = cookies.joinToString
         cookie.path.orEmpty().encodeURLParameter(),
         if (cookie.secure) TRUE_MARKER else FALSE_MARKER,
         if (cookie.httpOnly) TRUE_MARKER else FALSE_MARKER,
+        cookie.expires?.timestamp?.toString().orEmpty(),
+        cookie.encoding.name,
+        cookie.extensions[HOST_ONLY_COOKIE] ?: "true",
     ).joinToString("$FIELD_SEPARATOR")
 }
 
@@ -49,7 +54,7 @@ internal fun decodeCookies(encoded: String): List<Cookie> {
         .split(RECORD_SEPARATOR)
         .mapNotNull { record ->
             record.split(FIELD_SEPARATOR)
-                .takeIf { it.size == FIELD_COUNT }
+                .takeIf { it.size == FIELD_COUNT || it.size == 6 }
                 ?.toCookie()
         }
 }
@@ -66,5 +71,8 @@ private fun List<String>.toCookie(): Cookie? {
         path = runCatching { get(3).decodeURLQueryComponent() }.getOrDefault("").ifBlank { null },
         secure = get(4) == TRUE_MARKER,
         httpOnly = get(5) == TRUE_MARKER,
+        expires = getOrNull(6)?.toLongOrNull()?.let(::GMTDate),
+        encoding = getOrNull(7)?.let { runCatching { CookieEncoding.valueOf(it) }.getOrNull() } ?: CookieEncoding.URI_ENCODING,
+        extensions = mapOf(HOST_ONLY_COOKIE to (getOrNull(8) ?: "true")),
     )
 }

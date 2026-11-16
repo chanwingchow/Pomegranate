@@ -98,6 +98,7 @@ import com.chow.pomegranate.ui.screen.feature.academicFeatureEntries
 import com.chow.pomegranate.ui.screen.feature.academicProgramEntry
 import com.chow.pomegranate.ui.screen.login.LoginErrorRoute
 import com.chow.pomegranate.ui.screen.login.LoginRoute
+import com.chow.pomegranate.ui.screen.login.ConnectionSettingsRoute
 import com.chow.pomegranate.ui.screen.login.loginEntry
 import com.chow.pomegranate.ui.screen.main.me.ThemeColorRoute
 import com.chow.pomegranate.ui.screen.main.me.AvatarActionsRoute
@@ -163,6 +164,7 @@ internal val savedStateConfiguration = SavedStateConfiguration {
             subclass(SchoolTimetableFiltersRoute::class)
             subclass(TeacherSearchRoute::class)
             subclass(LoginRoute::class)
+            subclass(ConnectionSettingsRoute::class)
             subclass(LoginErrorRoute::class)
             subclass(SecondClassLoginRoute::class)
             subclass(OtpRoute::class)

@@ -14,6 +14,20 @@ class LoginViewModelTest {
     @BeforeTest fun setup() { Dispatchers.setMain(dispatcher) }
     @AfterTest fun teardown() { Dispatchers.resetMain() }
 
+    @Test fun connectionChangesRespectSecondClassroomOnlyAndRefreshAcademicCaptcha() = runTest {
+        val session = FakeLoginSession()
+        val model = LoginViewModel(session)
+        model.connectionChanged(LoginTarget.SecondClassroom)
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(0, session.captchaRequests)
+        model.connectionChanged(LoginTarget.Both)
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, session.captchaRequests)
+        model.connectionChanged()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(2, session.captchaRequests)
+    }
+
     @Test fun secondClassroomRequiresNoAcademicPasswordOrCaptchaAndForwardsSaveChoice() = runTest {
         val session = FakeLoginSession()
         val model = LoginViewModel(session)

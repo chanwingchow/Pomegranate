@@ -28,6 +28,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
 import kotlin.time.Clock
+import com.chow.pomegranate.network.WebVpnSession
 
 /**
  * 会话管理器实现。
@@ -50,6 +51,7 @@ class SessionManagerImpl(
     private val extracurricularSessionDao: ExtracurricularSessionDao,
     private val ocrEngine: OcrEngine,
     private val secureStore: SecureStore,
+    private val webVpn: WebVpnSession? = null,
 ) : SessionManager {
     /** 防止并发登录。 */
     private val mutex = Mutex()
@@ -80,6 +82,7 @@ class SessionManagerImpl(
     override suspend fun signIn(request: LoginRequest) {
         require(request.userId.isNotBlank()) { "请输入学号。" }
         mutex.withLock {
+            webVpn?.requireAccount(request.userId)
             val previous = activeLogin?.takeIf { it.userId == request.userId }
             val saved = userDao.user(request.userId)
             val resolved = request.copy(
@@ -103,6 +106,9 @@ class SessionManagerImpl(
     override suspend fun autoLogin() {
         val user = userDao.activeUser() ?: return
         mutex.withLock {
+            try { webVpn?.requireAccount(user.userId) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { return@withLock }
             val credentials = credentialsFor(user)
             if (this.userId.value == user.userId &&
                 (!credentials.target.academic || state.value == SessionState.Active) &&
@@ -136,6 +142,7 @@ class SessionManagerImpl(
         secureStore.remove(cookieKey(userId))
         secureStore.remove(secondClassroomPasswordKey(userId))
         secureStore.remove(loginTargetKey(userId))
+        webVpn?.forgetAccount(userId)
         extracurricularSessionDao.remove(userId)
 
         if (!wasActive) return
@@ -177,6 +184,7 @@ class SessionManagerImpl(
         secondClassroomState.value = SessionState.Inactive
         activeLogin = null
         extracurricularActivity.auth.restore("", "")
+        webVpn?.releaseAccount()
 
         // 同时清掉持久化的 Cookie：只清内存罐的话，下次启动会拿旧 Cookie
         // 直接恢复成已登录，公共设备上等于没登出。
@@ -273,6 +281,7 @@ class SessionManagerImpl(
         captcha: String = "",
     ) {
         val resolvedCaptcha = resolveCaptcha(captcha)
+        webVpn?.requireAccount(userId)
 
         when (val result = auth.login(LoginParam(userId, password, resolvedCaptcha))) {
             is LoginResult.Success -> Unit
@@ -380,6 +389,7 @@ class SessionManagerImpl(
         userId: String,
         password: String,
     ) {
+        webVpn?.requireAccount(userId)
         val sessionId = extracurricularActivity.auth.login(userId, password)
 
         // 会话 ID 只在本次进程内由客户端使用，重启后仍须重新登录；不落盘。
@@ -402,6 +412,7 @@ class SessionManagerImpl(
 
     /** 切换账号，供删除账号后回退使用。 */
     private suspend fun switchAccountInternal(user: UserEntity) {
+        webVpn?.requireAccount(user.userId)
         val credentials = credentialsFor(user)
         if (credentials.target.academic && restoreAndValidate(user)) return
         if (credentials.target.academic && credentials.password.isBlank()) throw SessionExpiredException()

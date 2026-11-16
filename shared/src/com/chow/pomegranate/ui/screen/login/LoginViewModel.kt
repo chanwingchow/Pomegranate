@@ -51,6 +51,16 @@ class LoginViewModel(
     private var captchaJob: Job? = null
     private var captchaVersion = 0
 
+    fun connectionChanged(target: LoginTarget = this.target) {
+        this.target = target
+        captchaVersion++
+        captchaJob?.cancel()
+        isLoadingCaptcha.value = false
+        captcha.value = null
+        captchaText.value = ""
+        if (target.academic) refreshCaptcha()
+    }
+
     fun selectTarget(target: LoginTarget) {
         this.target = target
         if (!target.academic) {

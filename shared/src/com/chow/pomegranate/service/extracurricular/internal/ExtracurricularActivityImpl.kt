@@ -7,6 +7,7 @@ import io.ktor.client.plugins.plugin
 import io.ktor.client.request.header
 import io.ktor.http.encodedPath
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.chow.pomegranate.network.serviceUrl
 
 /**
  * 第二课堂实现。
@@ -25,7 +26,7 @@ internal class ExtracurricularActivityImpl(
 
     init {
         httpClient.plugin(HttpSend).intercept { builder ->
-            if (builder.url.encodedPath == "/apps/common/login") {
+            if (builder.serviceUrl().encodedPath == "/apps/common/login") {
                 // 登录时从相应头取 X-token
                 execute(builder).also { call ->
                     token = call.response.headers["X-token"]

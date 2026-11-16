@@ -3,78 +3,59 @@ package com.chow.pomegranate.session
 import io.ktor.client.plugins.cookies.CookiesStorage
 import io.ktor.http.Cookie
 import io.ktor.http.Url
+import io.ktor.util.date.GMTDate
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Clock
 
-/**
- * 内存 Cookie 仓库。
- *
- * 与 Ktor 的 `AcceptAllCookiesStorage` 等价，但对外暴露全部 Cookie，
- * 以便会话管理器把 Cookie 持久化到本地、或在重新登录前恢复。
- */
-class CookieStorage : CookiesStorage {
-    /** Cookie 集合，键为请求 host。 */
-    private var cookies: MutableMap<String, MutableList<Cookie>> = mutableMapOf()
+internal const val HOST_ONLY_COOKIE = "pomegranate-host-only"
 
-    /** 互斥锁。 */
+/** 按 Domain、Path、名称区分 Cookie；快照供安全存储持久化。 */
+class CookieStorage(private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() }) : CookiesStorage {
     private val mutex = Mutex()
+    private var cookies = mutableListOf<Cookie>()
 
     override suspend fun get(requestUrl: Url): List<Cookie> = mutex.withLock {
-        cookies[requestUrl.host]?.toList() ?: emptyList()
+        cookies.removeAll { it.expires?.timestamp?.let { expiry -> expiry <= now() } == true }
+        cookies.filter { cookie ->
+            val domain = cookie.domain.orEmpty()
+            val host = requestUrl.host.lowercase()
+            val hostOnly = cookie.extensions[HOST_ONLY_COOKIE] != "false"
+            (host == domain || !hostOnly && host.endsWith(".$domain")) &&
+                (!cookie.secure || requestUrl.protocol.name in listOf("https", "wss")) &&
+                pathMatches(requestUrl.encodedPath.ifEmpty { "/" }, cookie.path.orEmpty())
+        }.sortedByDescending { it.path?.length ?: 0 }
     }
 
-    override suspend fun addCookie(
-        requestUrl: Url,
-        cookie: Cookie,
-    ) {
-        // 服务端未下发 Domain 时补上请求 host：
-        // Ktor 的 Cookie.matches 要求 cookie.domain 与请求 host 匹配，
-        // 缺少 Domain 的会话 Cookie 会被判定为不匹配，永远发不回去。
-        val normalized = if (cookie.domain.isNullOrBlank()) {
-            cookie.copy(domain = requestUrl.host)
-        } else {
-            cookie
-        }
-
+    override suspend fun addCookie(requestUrl: Url, cookie: Cookie) {
+        val hostOnly = cookie.domain.isNullOrBlank()
+        val domain = cookie.domain?.trimStart('.')?.lowercase()?.takeIf(String::isNotBlank) ?: requestUrl.host.lowercase()
+        if (requestUrl.host.lowercase() != domain && !requestUrl.host.lowercase().endsWith(".$domain")) return
+        val defaultPath = requestUrl.encodedPath.substringBeforeLast('/', "").ifEmpty { "/" }
+        val path = cookie.path?.takeIf { it.startsWith('/') } ?: defaultPath
+        val expires = cookie.maxAge?.let { GMTDate(now() + it.toLong() * 1000) } ?: cookie.expires
+        val normalized = cookie.copy(domain = domain, path = path, maxAge = null, expires = expires,
+            extensions = cookie.extensions + (HOST_ONLY_COOKIE to hostOnly.toString()))
         mutex.withLock {
-            cookies.getOrPut(requestUrl.host) { mutableListOf() }.apply {
-                // 同名 Cookie 只保留最新的一条
-                removeAll { it.name == normalized.name }
-                add(normalized)
-            }
+            cookies.removeAll { it.name == cookie.name && it.domain == domain && it.path == path }
+            if (expires == null || expires.timestamp > now()) cookies.add(normalized)
         }
     }
 
     override fun close() = Unit
-
-    /** 返回当前全部 Cookie。 */
     suspend fun snapshot(): List<Cookie> = mutex.withLock {
-        cookies.values.flatten()
+        cookies.removeAll { it.expires?.timestamp?.let { expiry -> expiry <= now() } == true }
+        cookies.toList()
     }
-
-    /** 用 [cookies] 替换当前全部 Cookie。 */
-    suspend fun restore(cookies: List<Cookie>) {
-        mutex.withLock {
-            val restored = mutableMapOf<String, MutableList<Cookie>>()
-
-            // 按 Domain 归档，与 get() 用的 requestUrl.host 对齐。
-            // 早先版本用 domain.orEmpty()，无 Domain 的会话 Cookie 全落在空键下，
-            // 按 host 查不到，导致保存的会话永远恢复不了、自动登录形同虚设。
-            cookies.forEach { cookie ->
-                val host = cookie.domain?.takeIf { it.isNotBlank() } ?: return@forEach
-
-                restored.getOrPut(host) { mutableListOf() }.apply {
-                    removeAll { it.name == cookie.name }
-                    add(cookie)
-                }
-            }
-
-            this.cookies = restored
-        }
+    suspend fun restore(values: List<Cookie>) = mutex.withLock {
+        cookies = values.mapNotNull { cookie ->
+            val domain = cookie.domain?.trimStart('.')?.lowercase()?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+            if (cookie.expires?.timestamp?.let { it <= now() } == true) return@mapNotNull null
+            cookie.copy(domain = domain, path = cookie.path?.takeIf { it.startsWith('/') } ?: "/")
+        }.distinctBy { Triple(it.name, it.domain, it.path) }.toMutableList()
     }
+    suspend fun clear() = mutex.withLock { cookies.clear() }
 
-    /** 清空全部 Cookie。 */
-    suspend fun clear() {
-        mutex.withLock { cookies.clear() }
-    }
+    private fun pathMatches(request: String, path: String) = request == path || request.startsWith(path) &&
+        (path.endsWith('/') || request.getOrNull(path.length) == '/')
 }
