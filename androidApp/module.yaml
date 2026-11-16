@@ -18,8 +18,8 @@ settings:
     minSdk: 30
     targetSdk: 37
     buildToolsVersion: 36.0.0
-    versionCode: 3
-    versionName: "1.1.0"
+    versionCode: 4
+    versionName: "1.1.1"
     resourcePackaging:
       excludes:
         - META-INF/AL2.0
