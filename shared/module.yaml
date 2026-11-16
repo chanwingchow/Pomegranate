@@ -1,0 +1,104 @@
+product:
+  type: kmp/lib
+  platforms: [android, jvm, iosArm64, iosSimulatorArm64]
+
+apply:
+  - //common.module-template.yaml
+
+dependencies:
+  - bom: $libs.koin.bom
+  - $libs.compose.runtime
+  - $libs.compose.foundation
+  - $libs.compose.material3
+  - $libs.compose.ui
+  - $libs.compose.components.resources: exported
+  - $libs.compose.uiToolingPreview
+  - $libs.androidx.lifecycle.viewmodelCompose
+  - $libs.androidx.lifecycle.runtimeCompose
+  - $libs.kotlinx.datetime
+  - $libs.ktor.client.core
+  - $libs.ktor.client.content.negotiation
+  - $libs.ktor.serialization.kotlinx.json
+  - $libs.kotlinx.serialization.json
+  - $libs.adaptive
+  - $libs.adaptive.layout
+  - $libs.adaptive.navigation3
+  - $libs.cloudy
+  - $libs.coil3.compose
+  - $libs.coil3.network.ktor3
+  - $libs.compose.shimmer
+  - $libs.liquid
+  - $libs.material.icons.core
+  - $libs.material.icons.extended
+  - $libs.materialKolor
+  - $libs.colorpicker
+  - $libs.navigation3.ui
+  - $libs.lifecycle.viewmodel.navigation3
+  - $libs.pdfkmp
+  - $libs.pdfkmp.viewer
+  - $libs.koin.core
+  - $libs.koin.annotations
+  - $libs.koin.compose
+  - $libs.koin.compose.viewmodel
+  - $libs.koin.compose.navigation3
+  - $libs.kotlinx.io.core
+  - $libs.ksoup
+  - $libs.html.text
+  - $libs.moon.ocr
+  - $libs.room.runtime
+  - $libs.sqlite.bundled
+
+dependencies@android:
+  - $libs.compose.uiTooling: runtime-only
+  - $libs.koin.android
+  - $libs.ktor.client.okhttp
+  - $libs.androidx.activity.compose
+  - $libs.androidx.camera.core
+  - $libs.androidx.camera.camera2
+  - $libs.androidx.camera.lifecycle
+  - $libs.androidx.camera.view
+  - $libs.mlkit.barcode
+  # The IDE's catalog resolver drops @aar; keep this artifact selector explicit.
+  - cz.adaptech.tesseract4android:tesseract4android:4.9.0@aar
+
+dependencies@jvm:
+  - $libs.ktor.client.okhttp
+  - $libs.tess4j
+  - $libs.zxing.core
+
+dependencies@ios:
+  - $libs.ktor.client.darwin
+
+test-dependencies:
+  - $libs.kotlin.test
+  - $libs.kotlinx.coroutines.test
+
+settings:
+  android:
+    namespace: com.chow.pomegranate.shared
+    compileSdk: 37
+    minSdk: 30
+    buildToolsVersion: 36.0.0
+  compose:
+    enabled: true
+    version: 1.12.1
+    resources:
+      packageName: com.chow.pomegranate
+      exposedAccessors: true
+  kotlin:
+    # Room generates an expect/actual database constructor object.
+    freeCompilerArgs:
+      - -Xexpect-actual-classes
+    serialization: enabled
+    compilerPlugins:
+      - id: io.insert-koin.compiler.plugin
+        dependency: $libs.koin.compiler.plugin
+    ksp:
+      version: 2.3.12
+      processors:
+        - $libs.room.compiler
+      processorOptions:
+        room.schemaLocation: ./schemas
+
+plugins:
+  pomegranate-build-config: enabled

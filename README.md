@@ -4,7 +4,7 @@
 [![最新版本](https://img.shields.io/github/v/release/chanwingchow/Pomegranate?label=最新版本&color=ff7059)](https://github.com/chanwingchow/Pomegranate/releases/latest)
 
 <p align="center">
-  <img src="shared/src/commonMain/composeResources/drawable/ic_logo.png" alt="小石榴 Logo" width="128" />
+  <img src="shared/composeResources/drawable/ic_logo.png" alt="小石榴 Logo" width="128" />
 </p>
 
 > 小石榴是一款直连学校官网的**非官方**广财教务系统客户端，由广财 21 级某不知名电商学长开发维护，无广告、无付费功能。

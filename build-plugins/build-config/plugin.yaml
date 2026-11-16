@@ -1,0 +1,12 @@
+# The generated directory is a common Kotlin source contribution, so every target
+# receives the same public BuildConfig API previously produced by BuildKonfig.
+tasks:
+  generate:
+    action: !com.chow.pomegranate.build.generateBuildConfig
+      catalogFile: ${project.rootDir}/gradle/libs.versions.toml
+      outputDirectory: ${taskOutputDir}
+
+generated:
+  sources:
+    - language: kotlin
+      directory: ${tasks.generate.action.outputDirectory}

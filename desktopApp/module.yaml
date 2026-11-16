@@ -1,0 +1,23 @@
+product: jvm/app
+layout: maven-like
+
+apply:
+  - //common.module-template.yaml
+
+dependencies:
+  - //shared
+  - $compose.desktop.currentOs
+  - $libs.kotlinx.coroutinesSwing
+
+settings:
+  jvm:
+    mainClass: com.chow.pomegranate.MainKt
+  compose:
+    enabled: true
+    version: 1.12.1
+    experimental:
+      hotReload:
+        version: 1.2.0
+
+plugins:
+  pomegranate-desktop-package: enabled

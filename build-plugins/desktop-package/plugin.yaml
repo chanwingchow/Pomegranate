@@ -1,0 +1,11 @@
+tasks:
+  packageDesktop:
+    action: !com.chow.pomegranate.build.packageDesktop
+      runtimeClasspath: ${module.runtimeClasspath}
+      appJar: ${module.jar}
+      moduleRoot: ${module.rootDir}
+      catalogFile: ${project.rootDir}/gradle/libs.versions.toml
+      outputDirectory: ${taskOutputDir}
+
+commands:
+  - packageDesktop

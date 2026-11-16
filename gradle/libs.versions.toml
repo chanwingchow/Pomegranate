@@ -1,8 +1,5 @@
 [versions]
-agp = "9.2.1"
 android-compileSdk = "37"
-android-minSdk = "30"
-android-targetSdk = "37"
 versionName = "1.0.1"
 androidx-activity = "1.13.0"
 camera = "1.7.0-alpha03"
@@ -13,7 +10,6 @@ androidx-core = "1.19.1"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.11.0"
 androidx-testExt = "1.3.0"
-composeHotReload = "1.2.0"
 composeMultiplatform = "1.12.1"
 junit = "4.13.2"
 kotlin = "2.4.20"
@@ -21,11 +17,9 @@ kotlinx-coroutines = "1.11.0"
 material3 = "1.12.0-alpha03"
 
 # DateTime
-kotlinx-datetime = "0.8.0"
+kotlinx-datetime = "0.8.0-0.6.x-compat"
 # Network
 ktor = "3.6.0"
-# Tooling
-buildkonfig = "0.23.0"
 # UI
 adaptive = "1.3.0-rc01"
 cloudy = "0.7.1"
@@ -38,7 +32,6 @@ colorpicker = "1.3.0"
 navigation3 = "1.2.0-beta01"
 room = "3.0.3"
 sqlite = "2.7.1"
-ksp = "2.3.12"
 pdfkmp = "1.3.0"
 # Utils
 koin = "4.2.2"
@@ -47,7 +40,6 @@ koltinx-io = "0.9.1"
 ksoup = "0.2.6"
 htmlText = "3.0.0-beta02"
 moonKmp = "1.0.0"
-tess4Android = "4.9.0"
 tess4j = "5.20.0"
 
 
@@ -118,61 +110,9 @@ kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.re
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 html-text = { module = "de.charlex.compose:html-text-material3", version.ref = "htmlText" }
 moon-ocr = { module = "io.github.moondev-studio:moon-ocr-kmp", version.ref = "moonKmp" }
-tess4Android = { module = "cz.adaptech.tesseract4android:tesseract4android", version.ref = "tess4Android" }
 tess4j = { module = "net.sourceforge.tess4j:tess4j", version.ref = "tess4j" }
 
 
-[bundles]
-datetime = [
-    "kotlinx-datetime",
-]
-network = [
-    "ktor-client-core",
-    "ktor-client-content-negotiation",
-    "ktor-serialization-kotlinx-json",
-]
-ui = [
-    "adaptive",
-    "adaptive-layout",
-    "adaptive-navigation3",
-    "cloudy",
-    "coil3-compose",
-    "coil3-network-ktor3",
-    "compose-shimmer",
-    "liquid",
-    "material-icons-core",
-    "material-icons-extended",
-    "materialKolor",
-    "colorpicker",
-    "navigation3-ui",
-    "lifecycle-viewmodel-navigation3",
-    "pdfkmp",
-    "pdfkmp-viewer",
-]
-utils = [
-    "koin-core",
-    "koin-annotations",
-    "koin-compose",
-    "koin-compose-viewmodel",
-    "koin-compose-navigation3",
-    "kotlinx-io-core",
-    "ksoup",
-    "html-text",
-    "moon-ocr",
-]
-
-
-[plugins]
-androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
-composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
-composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
-composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-
-buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig" }
-koinCompiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koinCompiler" }
-kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-room = { id = "androidx.room3", version.ref = "room" }
+koin-compiler-plugin = { module = "io.insert-koin:koin-compiler-plugin", version.ref = "koinCompiler" }
+proguard-base = { module = "com.guardsquare:proguard-base", version = "7.9.1" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.11.0" }

@@ -16,7 +16,7 @@ defaults:
     shell: bash
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=false
+  KOTLIN_CLI_NO_WELCOME_BANNER: "1"
 
 jobs:
   prepare:
@@ -40,7 +40,7 @@ jobs:
       ANDROID_VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/gradle-setup
+      - uses: ./.github/actions/toolchain-setup
       - name: Apply release version
         run: python .github/scripts/release_version.py --apply
       - name: Install Android SDK
@@ -63,8 +63,9 @@ jobs:
           mkdir -p artifacts
           export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
-          ./gradlew :androidApp:assembleRelease --stacktrace --no-configuration-cache
-          cp androidApp/build/outputs/apk/release/*-release.apk "artifacts/Pomegranate-${RELEASE_VERSION}-android-release.apk"
+          python .github/scripts/configure_android_signing.py
+          ./kotlin build -m androidApp -v release
+          python .github/scripts/collect_android_apk.py
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -80,27 +81,23 @@ jobs:
         include:
           - os: ubuntu-24.04
             platform: linux-x64
-            task: packageReleaseDeb
             extension: deb
           - os: windows-2022
             platform: windows-x64
-            task: packageReleaseMsi
             extension: msi
           - os: macos-15
             platform: macos-arm64
-            task: packageReleaseDmg
             extension: dmg
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     env:
       RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
       PACKAGE_VERSION: ${{ needs.prepare.outputs.package-version }}
-      PACKAGE_TASK: ${{ matrix.task }}
       PACKAGE_EXTENSION: ${{ matrix.extension }}
       PACKAGE_PLATFORM: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/gradle-setup
+      - uses: ./.github/actions/toolchain-setup
       - name: Apply release version
         run: python .github/scripts/release_version.py --apply
       - name: Install Linux packaging tools
@@ -112,12 +109,14 @@ jobs:
           test -n "$WIX"
           printf '%s\n' "${WIX}bin" >> "$GITHUB_PATH"
       - name: Build desktop installer
-        run: ./gradlew ":desktopApp:$PACKAGE_TASK" --stacktrace
+        run: ./kotlin do packageDesktop -m desktopApp
       - name: Collect installer
         run: python .github/scripts/collect_installer.py
       - name: Build Windows portable application
         if: runner.os == 'Windows'
-        run: ./gradlew :desktopApp:createReleaseDistributable --stacktrace
+        env:
+          PACKAGE_FORMAT: app-image
+        run: ./kotlin do packageDesktop -m desktopApp
       - name: Package Windows portable ZIP
         if: runner.os == 'Windows'
         run: python .github/scripts/package_windows_portable.py
@@ -136,13 +135,13 @@ jobs:
       PACKAGE_VERSION: ${{ needs.prepare.outputs.package-version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/gradle-setup
+      - uses: ./.github/actions/toolchain-setup
       - name: Apply release version
         run: python .github/scripts/release_version.py --apply
       - name: Build iOS simulator app
         run: |
           xcodebuild build \
-            -project iosApp/iosApp.xcodeproj \
+            -project iosApp/module.xcodeproj \
             -scheme iosApp \
             -configuration Release \
             -sdk iphonesimulator \

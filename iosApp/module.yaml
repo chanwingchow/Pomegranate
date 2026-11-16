@@ -1,0 +1,12 @@
+product: ios/app
+
+apply:
+  - //common.module-template.yaml
+
+dependencies:
+  - //shared
+
+settings:
+  compose:
+    enabled: true
+    version: 1.12.1

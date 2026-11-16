@@ -1,0 +1,11 @@
+modules:
+  - androidApp
+  - build-plugins/build-config
+  - build-plugins/desktop-package
+  - desktopApp
+  - iosApp
+  - shared
+
+plugins:
+  - ./build-plugins/build-config
+  - ./build-plugins/desktop-package

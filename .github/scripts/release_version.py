@@ -27,6 +27,18 @@ def main():
         if count != 1:
             raise ValueError('Expected exactly one versionName in version catalog')
         path.write_text(text)
+        path = Path('androidApp/module.yaml')
+        text, count = re.subn(r'^(\s+)versionName:.*$', lambda m: f'{m[1]}versionName: "{version}"', path.read_text(), flags=re.M)
+        if count != 1:
+            raise ValueError('Expected exactly one Android versionName')
+        if os.environ.get('ANDROID_VERSION_CODE'):
+            code = int(os.environ['ANDROID_VERSION_CODE'])
+            if code < 1:
+                raise ValueError('ANDROID_VERSION_CODE must be positive')
+            text, count = re.subn(r'^(\s+)versionCode:.*$', lambda m: f'{m[1]}versionCode: {code}', text, flags=re.M)
+            if count != 1:
+                raise ValueError('Expected exactly one Android versionCode')
+        path.write_text(text)
     elif os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
             output.write(f'version={version}\npackage_version={package_version}\nprerelease={str(prerelease).lower()}\n')

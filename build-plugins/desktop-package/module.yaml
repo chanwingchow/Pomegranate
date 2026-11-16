@@ -1,0 +1,14 @@
+product: jvm/amper-plugin
+
+apply:
+  - //common.module-template.yaml
+
+settings:
+  jvm:
+    release: 21
+
+dependencies:
+  - $libs.proguard.base
+
+pluginInfo:
+  id: pomegranate-desktop-package
