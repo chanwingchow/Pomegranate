@@ -32,7 +32,7 @@ fun PomTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     shadowElevation: Dp = 1.dp,
     colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(
-        containerColor = MaterialTheme.colorScheme.surface.copy(0.8f),
+        containerColor = MaterialTheme.colorScheme.surface,
     ),
     contentPadding: PaddingValues = TopAppBarDefaults.ContentPadding,
 ) {

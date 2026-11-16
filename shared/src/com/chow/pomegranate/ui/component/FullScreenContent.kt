@@ -121,13 +121,15 @@ fun EmptyContent(
     contentPadding: PaddingValues = PaddingValues.Zero,
     message: String? = null,
 ) {
-    Box(
-        modifier = modifier.fillMaxSize().padding(contentPadding),
-        contentAlignment = Alignment.Center,
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = contentPadding + PaddingValues(24.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
+        item { Text(
             message ?: stringResource(Res.string.no_academic_data),
             textAlign = TextAlign.Center,
-        )
+        ) }
     }
 }

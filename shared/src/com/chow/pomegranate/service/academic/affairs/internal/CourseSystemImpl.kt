@@ -5,6 +5,7 @@ import com.chow.pomegranate.service.academic.affairs.internal.parser.CourseDropL
 import com.chow.pomegranate.service.academic.affairs.internal.parser.CourseSystemEntranceParser
 import com.chow.pomegranate.service.academic.affairs.internal.parser.CreditSummaryParser
 import com.chow.pomegranate.service.academic.affairs.internal.parser.SelectedCoursesParser
+import com.chow.pomegranate.service.academic.affairs.internal.parser.SelectedCourseTimetableParser
 import com.chow.pomegranate.service.academic.affairs.model.CourseDropLog
 import com.chow.pomegranate.service.academic.affairs.model.CourseOperateResult
 import com.chow.pomegranate.service.academic.affairs.model.CourseSearchParam
@@ -55,6 +56,10 @@ internal class CourseSystemImpl(
 
         return SelectedCoursesParser.parse(html)
     }
+
+    override suspend fun getSelectedCourseTimetable() =
+        SelectedCourseTimetableParser.parse(
+            httpClient.get("/jsxsd/xsxkjg/xsxkkb").bodyAsText())
 
     override suspend fun getCourseDropLogs(): List<CourseDropLog> {
         val html = httpClient.get("/jsxsd/xsxkjg/getTkrzList").bodyAsText()

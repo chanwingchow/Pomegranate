@@ -6,8 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.chow.pomegranate.data.local.PreferenceKeys
 import com.chow.pomegranate.repository.AppPreferenceRepository
 import com.chow.pomegranate.repository.WallpaperRepository
+import com.chow.pomegranate.repository.AccountNicknameRepository
+import com.chow.pomegranate.repository.accountNicknameKey
 import com.chow.pomegranate.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
@@ -17,28 +23,33 @@ class MeViewModel(
     private val preferenceRepository: AppPreferenceRepository,
     private val wallpaperRepository: WallpaperRepository,
     val sessionManager: SessionManager,
+    nicknames: AccountNicknameRepository,
 ) : ViewModel() {
+    val nickname: StateFlow<String?> = combine(sessionManager.userId, sessionManager.accounts, nicknames.names) { id, accounts, names ->
+        accounts.firstOrNull { it.userId == id }?.let { names[accountNicknameKey(it.userId, it.isDemo)] }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     /** 性别。 */
-    val gender: MutableStateFlow<Gender>
+    val gender: StateFlow<Gender>
         field = MutableStateFlow(Gender.Default)
 
     /** 校区。 */
-    val campus: MutableStateFlow<CampusOption>
+    val campus: StateFlow<CampusOption>
         field = MutableStateFlow(CampusOption.Default)
 
     /** 主题色，`null` 表示使用默认色。 */
-    val themeColor: MutableStateFlow<Color?>
+    val themeColor: StateFlow<Color?>
         field = MutableStateFlow<Color?>(null)
 
     /** 上次确认保存的主题色，用于取消时还原。 */
     private var savedThemeColor: Color? = null
 
     /** 每日壁纸地址，获取失败时为空。 */
-    val wallpaperUrl: MutableStateFlow<String?>
+    val wallpaperUrl: StateFlow<String?>
         field = MutableStateFlow<String?>(null)
 
     /** 应用私有目录里的本地头像；不与学校账户资料同步。 */
-    val avatarUri: MutableStateFlow<String?>
+    val avatarUri: StateFlow<String?>
         field = MutableStateFlow<String?>(null)
 
     init {
@@ -54,7 +65,37 @@ class MeViewModel(
         }
 
         viewModelScope.launch {
+            preferenceRepository.observe(PreferenceKeys.PRIMARY_COLOR).collect { themeColor.value = it?.toColor() }
+        }
+        viewModelScope.launch {
+            preferenceRepository.observe(PreferenceKeys.LOCAL_AVATAR_URI).collect { avatarUri.value = it }
+        }
+
+        viewModelScope.launch {
             wallpaperUrl.value = wallpaperRepository.getTodayWallpaper()?.urlString
+        }
+    }
+
+    fun saveThemeColor(color: Color?, onResult: (Throwable?) -> Unit) {
+        viewModelScope.launch {
+            val result = com.chow.pomegranate.utils.runSuspendCatching {
+                preferenceRepository.set(PreferenceKeys.PRIMARY_COLOR, color?.toHexString())
+                themeColor.value = color
+                savedThemeColor = color
+            }
+            onResult(result.exceptionOrNull())
+        }
+    }
+
+    fun saveAvatar(uri: String?, onResult: (Throwable?) -> Unit) {
+        viewModelScope.launch {
+            val result = com.chow.pomegranate.utils.runSuspendCatching {
+                val previous = preferenceRepository.get(PreferenceKeys.LOCAL_AVATAR_URI)
+                preferenceRepository.set(PreferenceKeys.LOCAL_AVATAR_URI, uri)
+                avatarUri.value = uri
+                if (previous != null && previous != uri) deleteLocalAvatar(previous)
+            }
+            onResult(result.exceptionOrNull())
         }
     }
 
@@ -170,7 +211,7 @@ internal fun Color.toHexString(): String {
 
     val value = (alpha.toLong() shl 24) or (red.toLong() shl 16) or (green.toLong() shl 8) or blue.toLong()
 
-    return value.toString(16)
+    return value.toString(16).padStart(8, '0')
 }
 
 /**
@@ -179,11 +220,12 @@ internal fun Color.toHexString(): String {
  * 直接使用 `Color(ULong)` 需要打包后的 64 位值，这里按通道构造，避免颜色空间错乱。
  */
 internal fun String.toColor(): Color? {
-    val value = removePrefix("#").toLongOrNull(16) ?: return null
+    val hex = removePrefix("#")
+    val value = hex.toLongOrNull(16) ?: return null
     if (value !in 0x00000000..0xFFFFFFFF) return null
 
     // 6 位按不透明处理，8 位含透明度
-    val alpha = if (value <= 0xFFFFFF) 0xFF else ((value shr 24) and 0xFF).toInt()
+    val alpha = if (hex.length < 8) 0xFF else ((value shr 24) and 0xFF).toInt()
 
     return Color(
         red = ((value shr 16) and 0xFF).toInt(),

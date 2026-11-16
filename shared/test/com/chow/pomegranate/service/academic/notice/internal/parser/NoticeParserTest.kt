@@ -40,6 +40,26 @@ class NoticeParserTest {
     }
 
     @Test
+    fun extractsArticleWithoutRepeatingWebPageTitleDateOrRelatedNavigation() = runBlocking {
+        val detail = assertIs<Notice.Html>(parse("""
+            <h1 class="arti_title">网页标题</h1>
+            <p class="arti_metas">发布时间：2026-10-22 浏览次数：10</p>
+            <div class="entry"><div class="wp_articlecontent"><p><strong>通知正文</strong></p><a href="/_upload/form.xls">附件</a></div></div>
+            <div>上一篇：其他通知</div>
+        """.trimIndent()))
+        val body = Ksoup.parse(detail.html)
+        assertEquals("通知正文 附件", body.text())
+        assertEquals("通知正文", body.selectFirst("strong")!!.text())
+        assertEquals("https://jwc.gdufe.edu.cn/_upload/form.xls", body.selectFirst("a")!!.attr("href"))
+    }
+
+    @Test
+    fun stillFindsPdfInsideTheArticleContent() = runBlocking {
+        val detail = assertIs<Notice.Document>(parse("""<h1>网页标题</h1><div class="wp_articlecontent"><div class="wp_pdf_player" pdfsrc="/_upload/notice.pdf"></div></div>"""))
+        assertEquals("https://jwc.gdufe.edu.cn/_upload/notice.pdf", detail.pdfUrlString)
+    }
+
+    @Test
     fun preservesPdfNoticeDownload() = runBlocking {
         val detail = assertIs<Notice.Document>(
             parse("""<div class="wp_pdf_player" pdfsrc="/_upload/notice.pdf"></div>"""),

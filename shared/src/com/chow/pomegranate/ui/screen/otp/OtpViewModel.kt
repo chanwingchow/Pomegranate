@@ -22,10 +22,10 @@ class OtpViewModel(
         initialValue = emptyList(),
     )
 
-    /** 删除账户。 */
-    fun delete(account: OtpAccountEntity, onResult: (Result<Unit>) -> Unit) {
+    /** 一次删除所选账户，返回实际删除数量。 */
+    fun deleteAccounts(ids: List<Long>, onResult: (Result<Int>) -> Unit) {
         viewModelScope.launch {
-            onResult(runCatching { repository.delete(account) })
+            onResult(runCatching { repository.deleteAccounts(ids) })
         }
     }
 }

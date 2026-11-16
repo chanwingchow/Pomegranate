@@ -75,6 +75,11 @@ internal class EnrollmentImpl(
         return CourseTimetableParser.parse(html, semester = semester)
     }
 
+    override suspend fun getCourseTimetableSemesters(): List<Semester> {
+        val html = httpClient.get("/jsxsd/kbcx/kbxx_kc").bodyAsText()
+        return CourseTimetableParser.parseSemesters(html)
+    }
+
     override suspend fun getExamSchedule(semester: Semester): ExamSchedule {
         val html = httpClient.submitForm(
             "/jsxsd/xsks/xsksap_list",

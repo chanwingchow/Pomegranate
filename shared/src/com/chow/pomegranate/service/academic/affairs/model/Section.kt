@@ -3,6 +3,7 @@ package com.chow.pomegranate.service.academic.affairs.model
 /**
  * 节次。
  */
+@kotlinx.serialization.Serializable
 enum class Section(private val duration: ClosedRange<Int>) {
     /** 1-2 */
     First(1..2),

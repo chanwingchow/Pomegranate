@@ -13,6 +13,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import org.koin.core.annotation.KoinViewModel
 import kotlin.time.Clock
@@ -20,6 +21,8 @@ import kotlin.time.Clock
 /** 教学通知页 UI 状态。 */
 data class NoticeUiState(
     val notices: List<BasicNotice> = emptyList(),
+    /** 用最后返回的一页判断时间边界，不能一直拿第一页的新通知作比较。 */
+    val lastLoadedNotices: List<BasicNotice> = notices,
     val query: String = "",
     val filter: NoticeFilter = NoticeFilter.All,
     val isInitialLoading: Boolean = true,
@@ -41,6 +44,13 @@ data class NoticeUiState(
     val hasActiveSearch: Boolean
         get() = query.isNotBlank() || filter != NoticeFilter.All
 
+    val isRangeExhausted: Boolean
+        get() = lastLoadedNotices.isPastFilterRange(filter, today)
+
+    /** 当前筛选能否继续分页；切回“全部”仍保留服务端分页能力。 */
+    val canLoadMoreResults: Boolean
+        get() = canLoadMore && !isRangeExhausted
+
     /**
      * 关键词已经搜完全部已加载的页，但一条都没命中。
      *
@@ -50,8 +60,7 @@ data class NoticeUiState(
         get() = hasActiveSearch &&
             filteredNotices.isEmpty() &&
             !isInitialLoading &&
-            !isLoadingMore &&
-            !canLoadMore
+            (isRangeExhausted || (!isLoadingMore && !canLoadMore))
 }
 
 /**
@@ -95,7 +104,7 @@ internal fun BasicNotice.matchesFilter(
     NoticeFilter.Today -> date == today.toString()
     NoticeFilter.Yesterday -> date == today.minus(1, DateTimeUnit.DAY).toString()
     NoticeFilter.ThisWeek -> date in today.startOfWeekIso()..today.toString()
-    NoticeFilter.ThisMonth -> date.startsWith("${today.year}-${today.monthNumber.twoDigits()}")
+    NoticeFilter.ThisMonth -> date.startsWith("${today.year}-${today.month.number.twoDigits()}")
 }
 
 /**
@@ -110,7 +119,7 @@ private fun NoticeFilter.rangeStart(today: LocalDate): String? = when (this) {
     NoticeFilter.Today -> today.toString()
     NoticeFilter.Yesterday -> today.minus(1, DateTimeUnit.DAY).toString()
     NoticeFilter.ThisWeek -> today.startOfWeekIso()
-    NoticeFilter.ThisMonth -> "${today.year}-${today.monthNumber.twoDigits()}-01"
+    NoticeFilter.ThisMonth -> "${today.year}-${today.month.number.twoDigits()}-01"
 }
 
 /**
@@ -196,7 +205,7 @@ class NoticeViewModel(
      */
     fun loadMore() {
         val state = uiState.value
-        if (state.isInitialLoading || !state.canLoadMore) return
+        if (state.isInitialLoading || !state.canLoadMoreResults) return
 
         // 上一次翻页失败了就不再自动重试：滚动监听会在每次状态变化后再次触发，
         // 否则断网时会无退避地反复请求，界面也一直停在失败态。重试交给 retryLoadMore()。
@@ -295,7 +304,7 @@ class NoticeViewModel(
 
         // 已加载的内容里最新一条都已经早于筛选范围，后面的页只会更旧，不必再翻。
         // 用户切换筛选时会直接走到这里，所以这道判断不能只放在 applySearchProgress 里。
-        if (state.notices.isPastFilterRange(state.filter, state.today)) {
+        if (state.isRangeExhausted) {
             searchSettled = true
             return
         }
@@ -336,7 +345,7 @@ class NoticeViewModel(
         viewModelScope.launch {
             uiState.value = if (isRefresh) {
                 uiState.value.copy(
-                    notices = emptyList(),
+                    lastLoadedNotices = emptyList(),
                     isInitialLoading = true,
                     isLoadingMore = false,
                     isSearchLoading = false,
@@ -406,6 +415,7 @@ class NoticeViewModel(
 
         uiState.value = previous.copy(
             notices = merged,
+            lastLoadedNotices = page.notices,
             isInitialLoading = false,
             isLoadingMore = false,
             isSearchLoading = false,
@@ -439,7 +449,7 @@ class NoticeViewModel(
 
         // 已经翻到比筛选范围更早的日期：后面的页只会更旧，不可能再有命中，直接收工。
         // 这一步是"选今天却一直加载"的关键——今天没有通知时不该把历史全翻一遍。
-        if (notices.isPastFilterRange(state.filter, state.today)) {
+        if (state.isRangeExhausted) {
             searchSettled = true
             return
         }

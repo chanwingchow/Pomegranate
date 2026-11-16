@@ -14,6 +14,11 @@ import kotlinx.datetime.DayOfWeek
  * 课程课表解析器。
  */
 internal object CourseTimetableParser {
+    fun parseSemesters(html: String): List<Semester> = Ksoup.parse(html)
+        .select("select[name=xnxqh] option, select#xnxqh option, select[name=xnxq01id] option")
+        .mapNotNull { option -> runCatching { Semester.parse(option.attr("value").trim()) }.getOrNull() }
+        .distinct().sortedDescending()
+
     /** 换行标签正则（仅 [parseCourseCellFromHtml] 回退路径使用） */
     private val brRegex = Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE)
 

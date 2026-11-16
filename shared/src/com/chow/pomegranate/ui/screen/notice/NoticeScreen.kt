@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.twotone.OpenInBrowser
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
@@ -18,6 +19,7 @@ import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,7 +43,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 fun EntryProviderScope<NavKey>.noticeEntry() {
-    entry<NoticeRoute>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { EmptyContent() })) {
+    entry<NoticeRoute>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { StudyDetailPlaceholder() })) {
         NoticeScreen()
     }
 }
@@ -103,7 +105,6 @@ private fun NoticeContent(
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyStaggeredGridState()
     val sky = rememberSky()
-    var showScrollToTop by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.initialError) {
         uiState.initialError?.let {
@@ -115,12 +116,11 @@ private fun NoticeContent(
             snackbarHostState.showSnackbar(it.message ?: loadFailedMessage)
         }
     }
-    LaunchedEffect(gridState, uiState.notices.size, uiState.canLoadMore, uiState.isLoadingMore) {
+    LaunchedEffect(gridState, uiState.notices.size, uiState.canLoadMoreResults, uiState.isLoadingMore) {
         snapshotFlow {
             val layout = gridState.layoutInfo
             (layout.visibleItemsInfo.lastOrNull()?.index ?: -1) to layout.totalItemsCount
         }.collect { (lastVisible, total) ->
-            showScrollToTop = gridState.firstVisibleItemIndex > 0
             if (lastVisible >= total - LOAD_MORE_THRESHOLD) onLoadMore()
         }
     }
@@ -133,27 +133,19 @@ private fun NoticeContent(
                 filter = uiState.filter,
                 onQueryChange = onQueryChange,
                 onFilterChange = onFilterChange,
+                onRefresh = onRefresh,
                 onBack = { backStack.removeLastOrNull() },
                 modifier = Modifier.cloudy(sky = sky),
             )
         },
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible = showScrollToTop,
-                enter = slideInHorizontally { it } + fadeIn(),
-                exit = slideOutHorizontally { it } + fadeOut(),
-            ) {
-                SmallFloatingActionButton(onClick = { scope.launch { gridState.animateScrollToItem(0) } }) {
-                    Icon(Icons.Rounded.ArrowUpward, stringResource(Res.string.academic_notice))
-                }
-            }
-        },
+        floatingActionButton = { BackToTopButton(gridState) },
     ) { innerPadding ->
         // 不能把 innerPadding 加在外层容器上：那样列表的绘制区域会从顶栏下方开始，
         // 毛玻璃背后没有任何内容可采样，模糊效果就会画错位。
         // 这里沿用其他页面的做法——滚动区域铺满（含顶栏后方），由列表自己的
         // contentPadding 让内容避开顶栏。
-        Box(Modifier.fillMaxSize()) {
+        PomPullToRefreshBox(uiState.isInitialLoading && uiState.notices.isNotEmpty(), onRefresh,
+            contentPadding = innerPadding, enabled = !uiState.isInitialLoading) {
             when {
                 uiState.isInitialLoading && uiState.notices.isEmpty() ->
                     LoadingContent(contentPadding = innerPadding)
@@ -173,7 +165,7 @@ private fun NoticeContent(
                 }
 
                 // 搜索还在把后续页取回来时，不能直接给“没有数据”的结论
-                uiState.hasActiveSearch && uiState.filteredNotices.isEmpty() && uiState.isSearchLoading ->
+                uiState.hasActiveSearch && uiState.filteredNotices.isEmpty() && uiState.isSearchLoading && !uiState.isRangeExhausted ->
                     SearchingContent(
                         pageIndex = uiState.currentPageIndex,
                         contentPadding = innerPadding,
@@ -187,12 +179,10 @@ private fun NoticeContent(
                             // 只按时间范围筛选时，没有关键词可展示
                             stringResource(
                                 Res.string.notice_not_found_in_range,
-                                uiState.lastPageIndex ?: uiState.currentPageIndex,
                             )
                         } else {
                             stringResource(
                                 Res.string.notice_not_found,
-                                uiState.lastPageIndex ?: uiState.currentPageIndex,
                                 uiState.query.trim(),
                             )
                         },
@@ -209,7 +199,10 @@ private fun NoticeContent(
                     onRetryLoadMore = onRetryLoadMore,
                     onContinueSearch = onContinueSearch,
                     onOpenInBrowser = uriHandler::openUri,
-                ) { notice -> backStack.add(NoticeDetailRoute(notice.title, notice.date, notice.urlString)) }
+                ) { notice ->
+                    if (backStack.lastOrNull() is NoticeDetailRoute) backStack.removeLastOrNull()
+                    backStack.add(NoticeDetailRoute(notice.title, notice.date, notice.urlString))
+                }
             }
         }
     }
@@ -227,6 +220,7 @@ private fun NoticeTopBar(
     filter: NoticeFilter,
     onQueryChange: (String) -> Unit,
     onFilterChange: (NoticeFilter) -> Unit,
+    onRefresh: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -234,6 +228,7 @@ private fun NoticeTopBar(
         title = { Text(stringResource(Res.string.academic_notice)) },
         modifier = modifier,
         navigationIcon = { BackIconButton(onClick = onBack) },
+        actions = { IconButton(onClick = onRefresh) { Icon(Icons.Rounded.Refresh, "刷新") } },
         searchBar = {
             PomSearchBar(
                 query = query,
@@ -299,21 +294,21 @@ private fun NoticeList(
     onOpenNotice: (BasicNotice) -> Unit,
 ) {
     LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Adaptive(160.dp), modifier = skyModifier.fillMaxSize(), state = gridState,
+        columns = StaggeredGridCells.Adaptive(300.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)), modifier = skyModifier.fillMaxSize(), state = gridState,
         contentPadding = PaddingValues(
             start = 16.dp,
-            top = contentPadding.calculateTopPadding() + 8.dp,
+            top = contentPadding.calculateTopPadding() + 16.dp,
             end = 16.dp,
             bottom = contentPadding.calculateBottomPadding() + 16.dp,
         ),
-        verticalItemSpacing = 16.dp, horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalItemSpacing = 10.dp, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items(notices, key = BasicNotice::urlString) { notice ->
             NoticeCard(notice, { onOpenInBrowser(notice.urlString) }, { onOpenNotice(notice) })
         }
 
         // 搜索有结果但可能还有更多匹配时，给一个继续查找的入口
-        if (uiState.hasActiveSearch && !uiState.isLoadingMore && uiState.canLoadMore && !uiState.isSearchExhausted) {
+        if (uiState.hasActiveSearch && !uiState.isLoadingMore && uiState.canLoadMoreResults && !uiState.isSearchExhausted) {
             item(span = StaggeredGridItemSpan.FullLine) {
                 TextButton(
                     onClick = onContinueSearch,
@@ -362,7 +357,7 @@ private fun LoadMoreFooter(
             uiState.loadMoreError != null ->
                 TextButton(onClick = onRetryLoadMore) { Text(stringResource(Res.string.retry)) }
 
-            !uiState.canLoadMore ->
+            !uiState.canLoadMoreResults ->
                 Text(
                     stringResource(Res.string.no_more_notices),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -378,16 +373,17 @@ private fun LoadMoreFooter(
 
 @Composable
 private fun NoticeCard(notice: BasicNotice, onOpenInBrowser: () -> Unit, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Card(onClick = onClick, modifier = modifier) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(notice.title, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            Text(notice.date)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(notice.urlString, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                IconButton(onClick = onOpenInBrowser) {
-                    Icon(Icons.TwoTone.OpenInBrowser, stringResource(Res.string.open_in_browser))
+    val selected = (LocalBackStack.current.lastOrNull() as? NoticeDetailRoute)?.urlString == notice.urlString
+    ExpressiveActionCard(onClick, modifier = modifier, selected = selected) { pressed ->
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ExpressiveIconBadge(Icons.TwoTone.OpenInBrowser, notice.title.hashCode().and(Int.MAX_VALUE), pressed, Modifier.size(36.dp), 20.dp)
+                Text(notice.date, Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(onClick = onOpenInBrowser, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.TwoTone.OpenInBrowser, stringResource(Res.string.open_in_browser), Modifier.size(20.dp))
                 }
             }
+            Text(notice.title, style = MaterialTheme.typography.titleMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
         }
     }
 }

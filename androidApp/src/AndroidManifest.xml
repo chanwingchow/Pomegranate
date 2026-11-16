@@ -23,6 +23,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Pomegranate">
         <activity
+            android:windowSoftInputMode="adjustResize"
             android:exported="true"
             android:name=".MainActivity">
             <intent-filter>

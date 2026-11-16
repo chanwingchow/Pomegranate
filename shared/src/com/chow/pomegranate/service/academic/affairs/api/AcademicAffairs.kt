@@ -23,6 +23,7 @@ import com.chow.pomegranate.service.academic.affairs.model.LevelTranscript
 import com.chow.pomegranate.service.academic.affairs.model.LoginParam
 import com.chow.pomegranate.service.academic.affairs.model.LoginResult
 import com.chow.pomegranate.service.academic.affairs.model.SelectedCourse
+import com.chow.pomegranate.service.academic.affairs.model.SelectedCourseTimetable
 import com.chow.pomegranate.service.academic.affairs.model.Teacher
 import com.chow.pomegranate.service.academic.affairs.model.Teachers
 import com.chow.pomegranate.service.academic.affairs.model.Timetable
@@ -102,6 +103,9 @@ interface AcademicAffairs {
          * @param semester 学期
          */
         suspend fun getCourseTimetable(semester: Semester): CourseTimetable
+
+        /** 全校课表查询页提供的学期选项。 */
+        suspend fun getCourseTimetableSemesters(): List<Semester> = emptyList()
 
         /**
          * 返回考试安排。
@@ -205,6 +209,9 @@ interface AcademicAffairs {
          * 返回已选课程。
          */
         suspend fun getSelectedCourses(): List<SelectedCourse>
+
+        /** 当前选课轮次的已选课表，与学生正式学期课表分开。 */
+        suspend fun getSelectedCourseTimetable(): SelectedCourseTimetable
 
         /**
          * 返回退课记录。

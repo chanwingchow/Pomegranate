@@ -3,11 +3,11 @@ package com.chow.pomegranate.ui.screen.main.timetable
 import com.chow.pomegranate.service.academic.affairs.model.TimetableCourse
 import kotlinx.datetime.DayOfWeek
 
-/** 课表行数：每两节为一行的展示方式，共支持 10 节。 */
-internal const val TIMETABLE_ROW_COUNT = 5
+/** 课表行数：每两节一行，完整覆盖 12 节。 */
+internal const val TIMETABLE_ROW_COUNT = 6
 
 /** 周次上限，第 0 周表示开学前一周。 */
-internal const val TIMETABLE_MAX_WEEK = 21
+internal const val TIMETABLE_MAX_WEEK = com.chow.pomegranate.repository.MAX_ACADEMIC_WEEK + 1
 
 /** 每行包含的节数。 */
 private const val SECTIONS_PER_ROW = 2
@@ -36,18 +36,21 @@ class TimetableDisplay(
          */
         fun of(
             courses: List<TimetableCourse>,
-            week: Int = 0,
+            week: Int = 1,
+            includeOtherWeeks: Boolean = false,
         ): TimetableDisplay {
             val grouped = mutableMapOf<Int, MutableMap<DayOfWeek, MutableList<TimetableCourse>>>()
 
             courses.forEach { course ->
                 // 按选中周次过滤，避免显示整学期的课
-                if (!course.isInWeek(week)) return@forEach
+                if (!includeOtherWeeks && !course.isInWeek(week)) return@forEach
 
-                val row = course.rowIndex() ?: return@forEach
-                grouped.getOrPut(row) { mutableMapOf() }
-                    .getOrPut(course.dayOfWeek) { mutableListOf() }
-                    .add(course)
+                // 单节课和跨多个时间段的课都保留，落在覆盖的每一行。
+                course.sections.filter { it in 1..TIMETABLE_ROW_COUNT * SECTIONS_PER_ROW }
+                    .map { (it - 1) / SECTIONS_PER_ROW }.distinct().forEach { row ->
+                        grouped.getOrPut(row) { mutableMapOf() }
+                            .getOrPut(course.dayOfWeek) { mutableListOf() }.add(course)
+                    }
             }
 
             return TimetableDisplay(grouped)
@@ -63,8 +66,8 @@ class TimetableDisplay(
 internal fun TimetableCourse.isInWeek(week: Int): Boolean {
     val weeks = parseWeeks(weeksString) ?: return true
 
-    // 展示周次从 1 开始，设置里的第 0 周对应第 1 教学周
-    val target = week + 1
+    // 周次与界面数字一致；第 0 周为开学前，不应误算为第 1 教学周。
+    val target = week
 
     if (target !in weeks.range) return false
 
@@ -139,21 +142,4 @@ private fun String.toParity(): Parity? = when (this) {
     "单" -> Parity.Odd
     "双" -> Parity.Even
     else -> null
-}
-
-/**
- * 返回课程所在的行下标；节次不是连续的 `ab` 形式时返回 `null`。
- *
- * 例如 `[03-04]节` 解析为节次 `{3, 4}`，落在下标为 1 的行。
- */
-private fun TimetableCourse.rowIndex(): Int? {
-    val sorted = sections.sorted()
-    if (sorted.size != SECTIONS_PER_ROW) return null
-
-    val first = sorted.first()
-    if (sorted.last() != first + 1) return null
-    if (first < 1) return null
-
-    val row = (first - 1) / SECTIONS_PER_ROW
-    return row.takeIf { it in 0..<TIMETABLE_ROW_COUNT }
 }

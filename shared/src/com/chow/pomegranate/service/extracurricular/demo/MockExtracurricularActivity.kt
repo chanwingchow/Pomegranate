@@ -23,9 +23,23 @@ class MockExtracurricularActivity(
     private val day = 86_400_000L
     private val categories = listOf("思想政治与道德素养", "创新创业与实践能力", "社会责任与志愿服务",
         "团队协作与交流能力", "文化艺术与审美素养", "身心健康与体育素养", "职业发展与综合能力")
+    // 每项为一次独立历史活动的实际得分，成绩由这些记录汇总，不把总分平均拆分。
+    private val historyScores = listOf(
+        listOf(2, 2, 2, 2, 1, 1), listOf(1, 1, 1, 1), listOf(3, 3, 3, 3, 2, 2),
+        listOf(1, 1, 1, 1, 1, 1), listOf(2, 1, 1, 1, 1, 1, 1), listOf(1, 1, 1, 1), listOf(1, 1, 1, 1, 1),
+    )
+    private val history = historyScores.flatMapIndexed { category, scores ->
+        val title = listOf("青年理论研学", "创新实践训练", "社区志愿服务", "团队交流工作坊", "校园艺术体验", "运动健康课堂", "职业能力训练")[category]
+        scores.mapIndexed { index, score ->
+            val start = now - (30 + category * 7 + index * 2) * day
+            BasicEvent(2000 + category * 100 + index, "$title · 第 ${index + 1} 场（演示）", categories[category],
+                score.toDouble(), start, start + 7_200_000, "学生发展中心（演示）", null,
+                "实践活动", false, 32.0)
+        }
+    }
     private val transcript = Transcript(USER_ID, categories.mapIndexed { index, name ->
-        val score = listOf(12.0, 6.0, 18.0, 8.0, 10.0, 4.0, 5.0)[index]
-        ExtracurricularGrade(index + 1, name, score, 10.0, 30.0, score - 2.0, 2.0,
+        val activityScore = history.filter { it.category == name }.sumOf { it.score }
+        ExtracurricularGrade(index + 1, name, activityScore + 2.0, 10.0, 30.0, activityScore, 2.0,
             awardScore = 0.0, averageScore = 8.0, isRequired = 1, termMinScore = 2.0)
     })
     private val events = listOf(
@@ -37,10 +51,20 @@ class MockExtracurricularActivity(
             "学生发展中心（演示）", null, "专题讲座", true, 72.0),
         BasicEvent(1004, "校园文化分享会（演示）", categories[4], 2.0, now - 7 * day, now - 7 * day + 7_200_000,
             "校园文化社（演示）", null, "文化活动", false, 48.0),
-    )
+    ) + (0 until 60).map { index ->
+        val phase = index % 3
+        val start = when (phase) { 0 -> now + (index / 3 + 2) * day; 1 -> now - (index + 1) * 60_000L; else -> now - (index / 3 + 2) * day }
+        val end = if (phase == 1) now + (index + 1) * 60_000L else start + 7_200_000L
+        val title = listOf("青年读书分享", "社区志愿行动", "创新创意工坊", "校园艺术展", "运动健康课堂", "求职能力训练", "社会实践交流")[index % 7]
+        BasicEvent(1100 + index, "$title · 第 ${index / 7 + 1} 期（演示）", categories[index % categories.size],
+            1.0 + index % 3, start, end, "学生发展中心（演示）", null,
+            if (index % 2 == 0) "实践活动" else "专题讲座", index % 4 == 0, 20.0 + index % 60)
+    } + history
 
     private fun dateTime(epochMillis: Long) = Instant.fromEpochMilliseconds(epochMillis)
-        .toLocalDateTime(TimeZone.currentSystemDefault()).toString().replace('T', ' ')
+        .toLocalDateTime(TimeZone.currentSystemDefault()).let {
+            "${it.date} ${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}"
+        }
 
     override val auth = object : ExtracurricularActivity.Auth {
         override suspend fun login(userId: String, password: String): String {
@@ -58,12 +82,15 @@ class MockExtracurricularActivity(
         }
         override suspend fun getTranscriptLogs(): TranscriptLogs {
             delay(responseDelayMillis)
-            return TranscriptLogs(USER_ID, listOf(
-                TranscriptLog(events[3].name, null, null, categories[4], 2.0, events[3].endTime,
-                    "演示学期", sourceType = 1, note = "虚构的活动成绩记录，仅供演示。"),
-                TranscriptLog(null, "志愿服务实践项目（演示）", null, categories[2], 4.0, now - 10 * day,
-                    "演示学期", sourceType = 2, note = "虚构的项目成绩记录，仅供演示。"),
-            ))
+            val activities = history.map { event ->
+                TranscriptLog(event.name, null, null, event.category, event.score, event.endTime + day,
+                    "演示学期", sourceType = 1, note = "虚构的活动成绩记录，仅供演示。")
+            }
+            val projects = transcript.items.mapIndexed { index, grade ->
+                TranscriptLog(null, "${grade.name}实践项目（演示）", null, grade.name, grade.projectScore,
+                    now - (index + 1) * day, "演示学期", sourceType = 2, note = "虚构的项目成绩记录，仅供演示。")
+            }
+            return TranscriptLogs(USER_ID, (activities + projects).sortedByDescending { it.time })
         }
     }
 
@@ -75,10 +102,10 @@ class MockExtracurricularActivity(
         override suspend fun getMyEvents(state: EventState): List<MyEvent> {
             delay(responseDelayMillis)
             val selected = when (state) {
-                EventState.Enrolled -> events.take(3)
-                EventState.PendingStart -> events.take(2)
-                EventState.Ongoing -> listOf(events[2])
-                EventState.Finished -> listOf(events[3])
+                EventState.Enrolled -> events
+                EventState.PendingStart -> events.filter { it.startTime > now }
+                EventState.Ongoing -> events.filter { it.startTime <= now && it.endTime > now }
+                EventState.Finished -> events.filter { it.endTime <= now }
             }
             return selected.map { event ->
                 MyEvent(event.id, event.name, event.category, event.score, event.startTime, event.endTime,

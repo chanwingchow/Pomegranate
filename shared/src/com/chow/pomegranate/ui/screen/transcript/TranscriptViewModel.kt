@@ -18,12 +18,16 @@ sealed interface TranscriptUiState {
     data object NotLoggedIn : TranscriptUiState
     data class Success(
         val transcripts: Transcripts,
-        /** Explicitly submitted local keywords; no extra academic-affairs requests. */
-        val courseKeyword: String = "",
-        val levelKeyword: String = "",
     ) : TranscriptUiState
     data class Error(val throwable: Throwable) : TranscriptUiState
 }
+
+data class TranscriptFilters(
+    val courseKeyword: String = "",
+    val levelKeyword: String = "",
+    val semester: String? = null,
+    val failedOnly: Boolean = false,
+)
 
 /** 成绩页 ViewModel。 */
 @KoinViewModel
@@ -35,34 +39,46 @@ class TranscriptViewModel(
     val uiState: StateFlow<TranscriptUiState>
         field = MutableStateFlow<TranscriptUiState>(TranscriptUiState.Loading)
 
+    val isRefreshing: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    val filters: StateFlow<TranscriptFilters>
+        field = MutableStateFlow(TranscriptFilters())
+    private var filtersOwner: String? = null
+
     init {
         refresh()
     }
 
     /** 从教务系统刷新成绩。 */
     fun refresh() {
+        if (isRefreshing.value) return
+        isRefreshing.value = true
         viewModelScope.launch {
-            uiState.value = TranscriptUiState.Loading
-
-            // 未登录时不请求受保护接口，先等待自动登录
-            if (!sessionManager.isLoggedInWithWait()) {
-                uiState.value = TranscriptUiState.NotLoggedIn
-                return@launch
-            }
-            uiState.value = runSuspendCatching { repository.getTranscripts() }
-                .fold(
-                    onSuccess = TranscriptUiState::Success,
+            if (uiState.value !is TranscriptUiState.Success) uiState.value = TranscriptUiState.Loading
+            try {
+                if (!sessionManager.isLoggedInWithWait()) {
+                    uiState.value = TranscriptUiState.NotLoggedIn
+                    return@launch
+                }
+                uiState.value = runSuspendCatching { repository.getTranscripts() }.fold(
+                    onSuccess = { transcripts ->
+                        if (filtersOwner != transcripts.course.userId) {
+                            filters.value = TranscriptFilters(semester = transcripts.course.items.defaultTranscriptSemester())
+                            filtersOwner = transcripts.course.userId
+                        }
+                        TranscriptUiState.Success(transcripts)
+                    },
                     onFailure = TranscriptUiState::Error,
                 )
+            } finally {
+                isRefreshing.value = false
+            }
         }
     }
 
-    fun submitCourseKeyword(keyword: String) = updateKeywords { copy(courseKeyword = keyword) }
-
-    fun submitLevelKeyword(keyword: String) = updateKeywords { copy(levelKeyword = keyword) }
-
-    private fun updateKeywords(transform: TranscriptUiState.Success.() -> TranscriptUiState.Success) {
-        val current = uiState.value as? TranscriptUiState.Success ?: return
-        uiState.value = current.transform()
-    }
+    fun submitCourseKeyword(keyword: String) { filters.value = filters.value.copy(courseKeyword = keyword) }
+    fun submitLevelKeyword(keyword: String) { filters.value = filters.value.copy(levelKeyword = keyword) }
+    fun selectSemester(semester: String?) { filters.value = filters.value.copy(semester = semester) }
+    fun showFailedOnly(value: Boolean) { filters.value = filters.value.copy(failedOnly = value) }
 }

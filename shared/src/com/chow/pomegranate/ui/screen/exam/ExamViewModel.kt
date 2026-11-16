@@ -37,25 +37,31 @@ class ExamViewModel(
     val uiState: StateFlow<ExamUiState>
         field = MutableStateFlow<ExamUiState>(ExamUiState.Loading)
 
+    val isRefreshing: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
     init {
         refresh()
     }
 
     /** 从教务系统刷新考试安排。 */
     fun refresh() {
+        if (isRefreshing.value) return
+        isRefreshing.value = true
         viewModelScope.launch {
-            uiState.value = ExamUiState.Loading
-
-            // 未登录时不请求受保护接口，先等待自动登录
-            if (!sessionManager.isLoggedInWithWait()) {
-                uiState.value = ExamUiState.NotLoggedIn
-                return@launch
-            }
-            uiState.value = runSuspendCatching { repository.getExamSchedule() }
-                .fold(
+            if (uiState.value !is ExamUiState.Success) uiState.value = ExamUiState.Loading
+            try {
+                if (!sessionManager.isLoggedInWithWait()) {
+                    uiState.value = ExamUiState.NotLoggedIn
+                    return@launch
+                }
+                uiState.value = runSuspendCatching { repository.getExamSchedule() }.fold(
                     onSuccess = ExamUiState::Success,
                     onFailure = ExamUiState::Error,
                 )
+            } finally {
+                isRefreshing.value = false
+            }
         }
     }
 }

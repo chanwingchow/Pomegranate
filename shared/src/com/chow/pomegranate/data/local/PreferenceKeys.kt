@@ -13,6 +13,9 @@ object PreferenceKeys {
     /** 课表周次，第 0 周表示开学前一周。 */
     const val WEEK = "week"
 
+    /** 当前周校准值及所在周周一，供跨周自动递增。 */
+    const val WEEK_ANCHOR = "academic_week_anchor"
+
     /** 性别，取值为 `Gender` 的下标。 */
     const val GENDER = "gender"
 

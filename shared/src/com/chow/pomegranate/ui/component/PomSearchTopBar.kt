@@ -49,7 +49,7 @@ fun PomSearchTopBar(
 ) {
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = shadowElevation,
     ) {
         Column(

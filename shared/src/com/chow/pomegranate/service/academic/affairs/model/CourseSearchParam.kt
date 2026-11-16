@@ -20,7 +20,7 @@ sealed interface CourseSearchParam {
         /** 查询，接受课程名称、教师 */
         val query: String
 
-        /** 教师 */
+        /** 教师或课程名称（对应接口的 skls 参数） */
         val teacher: String
 
         /** 星期 */

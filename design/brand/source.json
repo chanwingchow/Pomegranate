@@ -1,0 +1,53 @@
+{
+  "approved_on": "2026-11-15",
+  "style": "A / crayon coral circle with upper-left tilted crown",
+  "generator": "OpenAI built-in image_gen",
+  "approved_preview": "approved-preview.png",
+  "transparent_master": "logo-master.png",
+  "production_prompt": "Use case: background-extraction / production icon export.\nRemove ONLY the outside white background from this FINAL APPROVED artwork, producing a genuinely transparent PNG of this exact crayon-coral circle wearing its small detailed yellow crown tilted at upper-left.\nKeep the exact circle contour, crayon strokes and little white paper flecks INSIDE the colored circle, its bright coral/peach colors, dark coral rim, and exact crown geometry, tilt, yellow fill, warm-grey outline, three tip beads, double base band, central coral diamond and two small dots. Preserve all artwork faithfully; do not redraw, recolor, smooth, simplify, move or redesign anything.\nWhite tiny gaps and flecks INSIDE the crayon-painted disk remain opaque white as part of the artwork; only the connected exterior white background becomes transparent. Keep antialiased soft transparency only along the outer silhouette.\nOne isolated artwork on transparent square canvas, same composition, scale and aspect ratio, generous existing margins. No app tile, title, labels, duplicate, shadow, glass, 3D or new details. This is background removal for exporting the approved image into app icon sizes, not another creative iteration.",
+  "export": "python3 design/brand/export_icons.py",
+  "platforms": {
+    "android": {
+      "foreground_px": 432,
+      "viewport_dp": 108,
+      "artwork_circle_dp": 54,
+      "safe_circle_dp": 66,
+      "background": "#FFFFFF",
+      "legacy_sizes": [
+        48,
+        72,
+        96,
+        144,
+        192
+      ]
+    },
+    "ios": {
+      "size_px": 1024,
+      "alpha": false,
+      "prefilled_corners": false,
+      "artwork_fraction": 0.74
+    },
+    "desktop": {
+      "png_px": 512,
+      "ico_sizes": [
+        16,
+        24,
+        32,
+        48,
+        64,
+        128,
+        256
+      ],
+      "icns_max_px": 1024,
+      "artwork_fraction": 0.7,
+      "transparent_rounded_tile": true
+    },
+    "in_app": {
+      "size_px": 512,
+      "alpha": true,
+      "artwork_fraction": 0.78
+    }
+  },
+  "approved_preview_sha256": "7cbc802bf1fb5d343201481f419cb7045859c2334587599a70890505d10ff173",
+  "master_sha256": "0277cef924ef8267a3e643c31f37e56b0ed776593d92e9855e8b6888aff2d6c7"
+}

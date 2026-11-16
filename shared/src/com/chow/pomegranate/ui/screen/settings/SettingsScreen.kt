@@ -1,5 +1,7 @@
 package com.chow.pomegranate.ui.screen.settings
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
@@ -18,9 +21,30 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.Logout
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.Science
+import androidx.compose.material.icons.rounded.Domain
+import androidx.navigation3.scene.DialogSceneStrategy
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
+import com.chow.pomegranate.ui.component.PomSettingRow
+import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import androidx.compose.material.icons.twotone.AutoMode
 import androidx.compose.material.icons.twotone.DarkMode
 import androidx.compose.material.icons.twotone.LightMode
+import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.navigation3.runtime.result.ResultEffect
+import androidx.navigation3.runtime.result.LocalResultEventBus
+import kotlin.math.roundToInt
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ElevatedCard
@@ -70,6 +94,7 @@ import com.chow.pomegranate.tips
 import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.PomTooltipBox
 import com.chow.pomegranate.ui.component.PomTopAppBar
+import com.chow.pomegranate.ui.component.rememberCurrentDate
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import com.chow.pomegranate.ui.theme.ThemeMode
@@ -91,9 +116,12 @@ private const val REPOSITORY_URL = "https://github.com/chanwingchow/Pomegranate"
  * 设置页导航入口。
  */
 fun EntryProviderScope<NavKey>.settingsEntry() {
-    entry<SettingsRoute> {
-        SettingsScreen()
-    }
+    entry<SettingsRoute> { SettingsScreen() }
+    entry<WeekSettingRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { WeekSettingSheet(it) }
+    entry<ClassroomRulesRoute> { ClassroomRulesScreen() }
+    entry<ClassroomRuleEditorRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { ClassroomRuleEditorSheet(it) }
+    entry<ClassroomBuiltinRulesRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { ClassroomBuiltinRulesSheet(it) }
+    entry<ClassroomRuleDeleteRoute>(metadata = DialogSceneStrategy.dialog()) { ClassroomRuleDeleteDialog(it) }
 }
 
 /**
@@ -101,6 +129,11 @@ fun EntryProviderScope<NavKey>.settingsEntry() {
  */
 @Serializable
 data object SettingsRoute : NavKey
+
+@Serializable
+data class WeekSettingRoute(val week: Int) : NavKey
+
+private data class WeekSelection(val week: Int)
 
 /**
  * 设置页。
@@ -132,6 +165,9 @@ private fun SettingsContent(
     viewModel: SettingsViewModel? = null,
 ) {
     val backStack = LocalBackStack.current
+    if (viewModel != null) ResultEffect<WeekSelection> { viewModel.setWeek(it.week) }
+    val today = rememberCurrentDate()
+    LaunchedEffect(today) { viewModel?.updateDate(today) }
 
     // 打开项目仓库
     val uriHandler = LocalUriHandler.current
@@ -176,38 +212,34 @@ private fun SettingsContent(
 
             item {
                 // 主题模式
-                ThemeModeSetting(
-                    themeMode = themeMode,
-                    onThemeModeChange = { viewModel?.setThemeMode(it) },
-                )
-            }
-
-            item {
-                ElevatedCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(stringResource(Res.string.demo_mode), style = MaterialTheme.typography.titleMedium)
-                            demoModeError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        }
-                        Switch(
-                            modifier = Modifier.semantics { contentDescription = demoModeLabel },
-                            checked = demoMode,
-                            onCheckedChange = { viewModel?.setDemoMode(it) },
-                        )
-                    }
+                Card(shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    ThemeModeSetting(themeMode = themeMode, onThemeModeChange = { viewModel?.setThemeMode(it) },
+                        modifier = Modifier.fillMaxWidth().padding(16.dp))
                 }
             }
 
             item {
                 // 周次设置
-                WeekSetting(
-                    week = week,
-                    onWeekChange = { viewModel?.setWeek(it) },
-                )
+                PomSettingRow(stringResource(Res.string.week), Icons.Rounded.CalendarMonth, 2,
+                    trailing = { Text("第 $week 周", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) },
+                    onClick = { backStack.add(WeekSettingRoute(week)) })
+            }
+
+            item {
+                PomSettingRow("名称替换", Icons.Rounded.Domain, 4,
+                    onClick = { backStack.add(ClassroomRulesRoute) })
+            }
+
+            item {
+                PomSettingRow(demoModeLabel, Icons.Rounded.Science, 1,
+                    modifier = Modifier.semantics {
+                        role = Role.Switch
+                        toggleableState = ToggleableState(demoMode)
+                    },
+                    trailing = { Switch(checked = demoMode, onCheckedChange = null) },
+                    onClick = { viewModel?.setDemoMode(!demoMode) })
+                demoModeError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
 
         }
@@ -369,82 +401,34 @@ private fun ThemeModeSetting(
     }
 }
 
-/**
- * 周次设置。
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** 周次独立选择目的地，设置页只展示当前值。 */
 @Composable
-private fun WeekSetting(
-    week: Int,
-    onWeekChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val scope = rememberCoroutineScope()
-
-    val tooltipState = rememberTooltipState()
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 标题
-            Text(
-                stringResource(Res.string.week),
-                modifier = Modifier.padding(horizontal = 4.dp),
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.titleSmall,
-            )
-
-            PomTooltipBox(
-                tooltip = {
-                    // 工具提示
-                    PlainTooltip {
-                        Text(stringResource(Res.string.week_tooltip))
-                    }
-                },
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                    // 在上方弹出
-                    positioning = TooltipAnchorPosition.Above,
-                ),
-                state = tooltipState,
-                enableUserInput = false,
-            ) {
-                // 提示
-                Icon(
-                    Icons.Outlined.Info,
-                    contentDescription = stringResource(Res.string.tips),
-                    modifier = Modifier.size(16.dp).clickable(
-                        interactionSource = null,
-                        indication = null,
-                        onClick = {
-                            scope.launch {
-                                tooltipState.show()
-                            }
-                        },
-                    ),
-                    tint = MaterialTheme.colorScheme.outline,
-                )
+private fun WeekSettingSheet(route: WeekSettingRoute) {
+    var draft by rememberSaveable { mutableIntStateOf(route.week.coerceIn(0, 20)) }
+    val backStack = LocalBackStack.current
+    val results = LocalResultEventBus.current
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        Text("设置当前周次", style = MaterialTheme.typography.titleLarge)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            FilledTonalIconButton(onClick = { draft-- }, enabled = draft > 0) { Icon(Icons.Rounded.Remove, "上一周") }
+            Text("第 $draft 周", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            FilledTonalIconButton(onClick = { draft++ }, enabled = draft < 20) { Icon(Icons.Rounded.Add, "下一周") }
+        }
+        Column {
+            Slider(value = draft.toFloat(), onValueChange = { draft = it.roundToInt() }, valueRange = 0f..20f, steps = 19,
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "周次" })
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("0 周", style = MaterialTheme.typography.labelMedium)
+                Text("20 周", style = MaterialTheme.typography.labelMedium)
             }
         }
-
-        // 周次列表
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            itemVerticalAlignment = Alignment.CenterVertically,
-        ) {
-            repeat(21) { index ->
-                // 周次选项
-                ToggleButton(
-                    checked = index == week,
-                    onCheckedChange = { onWeekChange(index) },
-                ) {
-                    Text("$index")
-                }
-            }
-        }
+        Text(stringResource(Res.string.week_tooltip), style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Button(onClick = {
+            results.sendResult(WeekSelection(draft))
+            backStack.removeLastOrNull()
+        }, modifier = Modifier.fillMaxWidth()) { Text("应用") }
     }
 }

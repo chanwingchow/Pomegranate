@@ -8,11 +8,19 @@ import com.chow.pomegranate.login_failed
 import com.chow.pomegranate.password_required
 import com.chow.pomegranate.username_required
 import com.chow.pomegranate.session.SessionManager
+import com.chow.pomegranate.session.LoginRequest
+import com.chow.pomegranate.session.LoginTarget
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import com.chow.pomegranate.utils.runSuspendCatching
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.koin.core.annotation.KoinViewModel
+
+data class LoginError(val message: StringResource, val detail: String? = null)
 
 /** 登录页 ViewModel。 */
 @KoinViewModel
@@ -20,49 +28,55 @@ class LoginViewModel(
     private val sessionManager: SessionManager,
 ) : ViewModel() {
     /** 是否正在登录。 */
-    val isLoggingIn: MutableStateFlow<Boolean>
+    val isLoggingIn: StateFlow<Boolean>
         field = MutableStateFlow(false)
 
-    /** 登录失败信息，为空表示没有错误。 */
-    val errorMessage: MutableStateFlow<StringResource?>
-        field = MutableStateFlow<StringResource?>(null)
-
-    /** 登录失败的原始原因，用于提示用户。 */
-    val errorDetail: MutableStateFlow<String?>
-        field = MutableStateFlow<String?>(null)
+    private val errorEvents = Channel<LoginError>(Channel.BUFFERED)
+    val errors = errorEvents.receiveAsFlow()
 
     /** 验证码图片，为空表示未获取。 */
-    val captcha: MutableStateFlow<ByteArray?>
+    val captcha: StateFlow<ByteArray?>
         field = MutableStateFlow<ByteArray?>(null)
 
     /** 用户手动填写的验证码；留空时由程序自动识别。 */
-    val captchaText: MutableStateFlow<String>
+    val captchaText: StateFlow<String>
         field = MutableStateFlow("")
 
     /** 是否正在获取验证码。 */
-    val isLoadingCaptcha: MutableStateFlow<Boolean>
+    val isLoadingCaptcha: StateFlow<Boolean>
         field = MutableStateFlow(false)
 
-    init {
-        refreshCaptcha()
+    val accounts = sessionManager.accounts
+    private var target = LoginTarget.Both
+    private var captchaJob: Job? = null
+    private var captchaVersion = 0
+
+    fun selectTarget(target: LoginTarget) {
+        this.target = target
+        if (!target.academic) {
+            captchaVersion++
+            captchaJob?.cancel()
+            isLoadingCaptcha.value = false
+        } else if (captcha.value == null) refreshCaptcha()
     }
 
     /** 刷新验证码。 */
     fun refreshCaptcha() {
-        if (isLoadingCaptcha.value) return
-
-        viewModelScope.launch {
-            isLoadingCaptcha.value = true
+        if (!target.academic || isLoadingCaptcha.value) return
+        isLoadingCaptcha.value = true
+        val version = ++captchaVersion
+        captchaJob = viewModelScope.launch {
+            captcha.value = null
             captchaText.value = ""
-
-            runSuspendCatching { sessionManager.getCaptcha() }
-                .onSuccess { captcha.value = it }
-                .onFailure { throwable ->
-                    errorMessage.value = Res.string.captcha
-                    errorDetail.value = throwable.message
-                }
-
-            isLoadingCaptcha.value = false
+            try {
+                runSuspendCatching { sessionManager.getCaptcha() }
+                    .onSuccess { if (version == captchaVersion) captcha.value = it }
+                    .onFailure { throwable ->
+                        if (version == captchaVersion) {
+                            errorEvents.trySend(LoginError(Res.string.captcha, throwable.message))
+                        }
+                    }
+            } finally { if (version == captchaVersion) isLoadingCaptcha.value = false }
         }
     }
 
@@ -81,44 +95,44 @@ class LoginViewModel(
         password: String,
         secondClassroomPassword: String,
         captcha: String,
+        target: LoginTarget = this.target,
+        saveAccount: Boolean = true,
         onSuccess: () -> Unit,
     ) {
         if (isLoggingIn.value) return
 
-        errorMessage.value = null
-        errorDetail.value = null
 
         when {
             userId.isBlank() -> {
-                errorMessage.value = Res.string.username_required
+                errorEvents.trySend(LoginError(Res.string.username_required))
                 return
             }
 
-            password.isBlank() -> {
-                errorMessage.value = Res.string.password_required
+            target.academic && password.isBlank() && accounts.value.none { it.userId == userId.trim() } -> {
+                errorEvents.trySend(LoginError(Res.string.password_required))
                 return
             }
         }
 
+        isLoggingIn.value = true
         viewModelScope.launch {
-            isLoggingIn.value = true
-
             try {
                 runSuspendCatching {
-                    sessionManager.login(
-                        userId = userId,
+                    sessionManager.signIn(LoginRequest(
+                        userId = userId.trim(),
                         password = password,
                         secondClassroomPassword = secondClassroomPassword,
                         captcha = captcha,
-                    )
+                        target = target,
+                        saveAccount = saveAccount,
+                    ))
                 }.onSuccess {
                     onSuccess()
                 }.onFailure { throwable ->
-                    errorMessage.value = Res.string.login_failed
-                    errorDetail.value = throwable.message
+                    errorEvents.trySend(LoginError(Res.string.login_failed, throwable.message))
 
                     // 登录失败后验证码已失效
-                    refreshCaptcha()
+                    if (target.academic) refreshCaptcha()
                 }
             } finally {
                 // 必须放在 finally：onSuccess 里的导航回调一旦抛异常，

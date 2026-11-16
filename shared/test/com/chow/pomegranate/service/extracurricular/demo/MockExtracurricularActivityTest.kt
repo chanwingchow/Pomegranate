@@ -24,8 +24,22 @@ class MockExtracurricularActivityTest {
         assertTrue(transcript.items.all { it.score == it.activityScore + it.projectScore })
         val logs = api.achievement.getTranscriptLogs()
         assertEquals(transcript.userId, logs.userId)
+        assertTrue(logs.items.size >= 40)
         assertTrue(logs.items.all { it.displayName.isNotBlank() && it.score > 0 })
         assertTrue(logs.items.all { log -> transcript.items.any { it.name == log.category } })
+        val events = api.activity.getEvents()
+        transcript.items.forEach { grade ->
+            val records = logs.items.filter { it.category == grade.name }
+            assertEquals(grade.score, records.sumOf { it.score })
+            assertEquals(grade.activityScore, records.filter { it.sourceType == 1 }.sumOf { it.score })
+            assertEquals(grade.projectScore, records.filter { it.sourceType == 2 }.sumOf { it.score })
+        }
+        logs.items.filter { it.sourceType == 1 }.forEach { log ->
+            val event = events.single { it.name == log.activityName }
+            assertEquals(event.score, log.score)
+            assertTrue(log.time >= event.endTime)
+        }
+        assertTrue(logs.items.all { it.score % 1.0 == 0.0 })
     }
 
     @Test
@@ -45,8 +59,8 @@ class MockExtracurricularActivityTest {
         val pending = api.getMyEvents(EventState.PendingStart)
         val ongoing = api.getMyEvents(EventState.Ongoing)
         val finished = api.getMyEvents(EventState.Finished)
-        assertTrue(pending.isNotEmpty() && ongoing.isNotEmpty() && finished.isNotEmpty())
-        assertTrue(pending.all { it.startTime > ongoing.single().startTime })
+        assertTrue(pending.size >= 20 && ongoing.size >= 20 && finished.size >= 20)
+        assertTrue(pending.all { it.startTime > ongoing.maxOf { it.startTime } })
         assertTrue(finished.all { api.getEvent(it.id).isFinished })
         assertTrue(api.getMyEvents(EventState.Enrolled).map { it.id }.containsAll(pending.map { it.id }))
         assertFailsWith<IllegalStateException> { api.getEvent(-1) }

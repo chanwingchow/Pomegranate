@@ -14,6 +14,7 @@ import com.chow.pomegranate.tool.ocr.OcrEngine
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,122 +57,85 @@ class SessionManagerImpl(
     /** 账号列表使用的协程作用域。 */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    override val userId: MutableStateFlow<String?>
+    override val userId: StateFlow<String?>
         field = MutableStateFlow<String?>(null)
 
-    override val state: MutableStateFlow<SessionState>
+    override val state: StateFlow<SessionState>
         field = MutableStateFlow<SessionState>(SessionState.Inactive)
 
+    override val secondClassroomState: StateFlow<SessionState>
+        field = MutableStateFlow<SessionState>(SessionState.Inactive)
+
+    private var activeLogin: LoginRequest? = null
+
     override val accounts: StateFlow<List<Account>> = userDao.observeAll()
-        .map { users -> users.map { Account(it.userId, it.isActive) } }
+        .map { users -> users.map { Account(it.userId, it.isActive, savedTarget(it.userId)) } }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     override suspend fun getCaptcha(): ByteArray = auth.getCaptcha()
 
-    override suspend fun login(
-        userId: String,
-        password: String,
-        secondClassroomPassword: String,
-        captcha: String,
-    ) {
-        val saved = userDao.user(userId)
+    override suspend fun login(userId: String, password: String, secondClassroomPassword: String, captcha: String) =
+        signIn(LoginRequest(userId, password, secondClassroomPassword, captcha))
 
-        // 未填写密码时复用本地已保存的密码
-        val resolvedPassword = password.ifBlank { saved?.let { secureStore.get(it.userId) }.orEmpty() }
-        require(resolvedPassword.isNotBlank()) { "请输入密码。" }
-
-        // 第二课堂密码缺省使用学号，与已保存账号的处理保持一致；保证写入安全存储的永远是非空值
-        val resolvedSecondClassroomPassword = secondClassroomPassword
-            .ifBlank { secondClassroomPasswordFor(saved) }
-            .ifBlank { userId }
-
+    override suspend fun signIn(request: LoginRequest) {
+        require(request.userId.isNotBlank()) { "请输入学号。" }
         mutex.withLock {
-            establish(
-                userId = userId,
-                password = resolvedPassword,
-                secondClassroomPassword = resolvedSecondClassroomPassword,
-                savedCookies = cookiesFor(saved),
-                captcha = captcha,
+            val previous = activeLogin?.takeIf { it.userId == request.userId }
+            val saved = userDao.user(request.userId)
+            val resolved = request.copy(
+                password = if (request.target.academic) request.password.ifBlank { secureStore.get(request.userId).orEmpty() } else "",
+                secondClassroomPassword = if (request.target.secondClassroom) request.secondClassroomPassword.ifBlank { secondClassroomPasswordFor(saved) }.ifBlank { request.userId } else "",
             )
-
-            persist(
-                userId = userId,
-                password = resolvedPassword,
-                secondClassroomPassword = resolvedSecondClassroomPassword,
+            if (resolved.target.academic) require(resolved.password.isNotBlank()) { "请输入教务系统密码。" }
+            establish(resolved.userId, resolved.password, resolved.secondClassroomPassword,
+                if (resolved.target.academic) cookiesFor(saved) else "", resolved.captcha, resolved.target)
+            if (resolved.saveAccount) persist(resolved.userId, resolved.password, resolved.secondClassroomPassword, resolved.target)
+            else userDao.setActive("")
+            activeLogin = resolved.copy(
+                captcha = "", target = mergeTargets(previous?.target, resolved.target),
+                password = if (resolved.target.academic) resolved.password else previous?.password.orEmpty(),
+                secondClassroomPassword = if (resolved.target.secondClassroom) resolved.secondClassroomPassword else previous?.secondClassroomPassword.orEmpty(),
+                saveAccount = resolved.saveAccount && previous?.saveAccount != false,
             )
         }
     }
 
     override suspend fun autoLogin() {
         val user = userDao.activeUser() ?: return
-
         mutex.withLock {
-            // 已经登录同一个账号时不重复登录
-            if (state.value == SessionState.Active && userId.value == user.userId) return@withLock
-
-            // 先尝试复用已保存的 Cookie，避免每次启动都走验证码登录
-            if (restoreAndValidate(user)) return@withLock
-
-            val password = secureStore.get(user.userId)
-
-            // 没有本地密码时无法自动登录，保留未登录状态
-            if (password.isNullOrBlank()) {
-                state.value = SessionState.Inactive
-                return@withLock
-            }
-
-            runCatching {
-                establish(
-                    userId = user.userId,
-                    password = password,
-                    secondClassroomPassword = resolvedSecondClassroomPassword(user),
-                    savedCookies = cookiesFor(user),
-                )
-            }.onFailure {
-                state.value = SessionState.Inactive
+            val credentials = credentialsFor(user)
+            if (this.userId.value == user.userId &&
+                (!credentials.target.academic || state.value == SessionState.Active) &&
+                (!credentials.target.secondClassroom || secondClassroomState.value == SessionState.Active)) return@withLock
+            if (credentials.target.academic && restoreAndValidate(user)) return@withLock
+            if (credentials.target.academic && credentials.password.isBlank()) return@withLock
+            try {
+                establish(user.userId, credentials.password, credentials.secondClassroomPassword,
+                    if (credentials.target.academic) cookiesFor(user) else "", target = credentials.target)
+                activeLogin = credentials
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (credentials.target.academic) state.value = SessionState.Inactive
+                if (credentials.target.secondClassroom) secondClassroomState.value = SessionState.Inactive
             }
         }
     }
 
     override suspend fun switchAccount(userId: String) {
         mutex.withLock {
-            // 已经登录同一个账号时不重复处理
-            if (this.userId.value == userId && state.value == SessionState.Active) return@withLock
-
             val user = userDao.user(userId) ?: error("账号不存在。")
-
-            // 优先复用已保存的 Cookie
-            if (restoreAndValidate(user)) return@withLock
-
-            // Cookie 已失效，使用本地凭据自动重新登录
-            val password = secureStore.get(user.userId)
-
-            if (password.isNullOrBlank()) {
-                state.value = SessionState.Expired
-                throw SessionExpiredException()
-            }
-
-            runCatching {
-                establish(
-                    userId = user.userId,
-                    password = password,
-                    secondClassroomPassword = resolvedSecondClassroomPassword(user),
-                    savedCookies = cookiesFor(user),
-                )
-            }.onFailure {
-                state.value = SessionState.Expired
-                throw SessionExpiredException()
-            }
+            switchAccountInternal(user)
         }
     }
 
     override suspend fun deleteAccount(userId: String) {
-        val wasActive = userDao.user(userId)?.isActive == true
+        val wasActive = this.userId.value == userId || userDao.user(userId)?.isActive == true
 
         userDao.remove(userId)
         secureStore.remove(userId)
         secureStore.remove(cookieKey(userId))
         secureStore.remove(secondClassroomPasswordKey(userId))
+        secureStore.remove(loginTargetKey(userId))
         extracurricularSessionDao.remove(userId)
 
         if (!wasActive) return
@@ -180,6 +144,8 @@ class SessionManagerImpl(
         cookieStorage.clear()
         this.userId.value = null
         state.value = SessionState.Inactive
+        secondClassroomState.value = SessionState.Inactive
+        activeLogin = null
 
         userDao.users().firstOrNull()?.let { next ->
             runCatching { switchAccountInternal(next) }
@@ -188,25 +154,14 @@ class SessionManagerImpl(
 
     override suspend fun refresh() {
         mutex.withLock {
-            val user = userDao.activeUser() ?: throw SessionExpiredException()
-            val password = secureStore.get(user.userId)
-
-            if (password.isNullOrBlank()) {
-                state.value = SessionState.Expired
-                throw SessionExpiredException()
-            }
-
-            runCatching {
-                establish(
-                    userId = user.userId,
-                    password = password,
-                    secondClassroomPassword = resolvedSecondClassroomPassword(user),
-                    savedCookies = cookiesFor(user),
-                )
-            }.onFailure {
-                state.value = SessionState.Expired
-                throw SessionExpiredException()
-            }
+            val credentials = activeLogin ?: userDao.activeUser()?.let { credentialsFor(it) } ?: throw SessionExpiredException()
+            if (!credentials.target.academic || credentials.password.isBlank()) throw SessionExpiredException()
+            try {
+                val saved = userDao.user(credentials.userId)
+                establish(credentials.userId, credentials.password, credentials.secondClassroomPassword, cookiesFor(saved), target = credentials.target)
+                if (credentials.saveAccount) persist(credentials.userId, credentials.password, credentials.secondClassroomPassword, credentials.target)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { state.value = SessionState.Expired; throw SessionExpiredException() }
         }
     }
 
@@ -214,11 +169,14 @@ class SessionManagerImpl(
         val loggedOutUserId = userId.value
 
         // 服务端登出失败不应阻塞本地登出
-        runCatching { auth.logout() }
+        if (state.value == SessionState.Active) runCatching { auth.logout() }
 
         cookieStorage.clear()
         userId.value = null
         state.value = SessionState.Inactive
+        secondClassroomState.value = SessionState.Inactive
+        activeLogin = null
+        extracurricularActivity.auth.restore("", "")
 
         // 同时清掉持久化的 Cookie：只清内存罐的话，下次启动会拿旧 Cookie
         // 直接恢复成已登录，公共设备上等于没登出。
@@ -232,11 +190,20 @@ class SessionManagerImpl(
         if (state.value == SessionState.Active) return false
 
         // 没有任何可自动登录的账号，直接返回，由调用方提示手动登录
+        if (activeLogin?.target == LoginTarget.SecondClassroom) return null
         val user = userDao.activeUser() ?: return null
-        if (secureStore.get(user.userId).isNullOrBlank()) return null
+        if (!savedTarget(user.userId).academic || secureStore.get(user.userId).isNullOrBlank()) return null
 
         state.first { it == SessionState.Active }
 
+        return true
+    }
+
+    override suspend fun awaitSecondClassroomLogin(): Boolean? {
+        if (secondClassroomState.value == SessionState.Active) return false
+        val credentials = activeLogin ?: userDao.activeUser()?.let { credentialsFor(it) } ?: return null
+        if (!credentials.target.secondClassroom) return null
+        secondClassroomState.first { it == SessionState.Active }
         return true
     }
 
@@ -255,7 +222,18 @@ class SessionManagerImpl(
         secondClassroomPassword: String,
         savedCookies: String,
         captcha: String = "",
+        target: LoginTarget = LoginTarget.Both,
     ) {
+        val sameUser = this.userId.value == userId
+        if (target == LoginTarget.SecondClassroom) {
+            // 第二课堂完全独立：不获取验证码、不校验教务 Cookie、不调用教务认证。
+            loginSecondClassroom(userId, secondClassroomPassword)
+            if (!sameUser) { cookieStorage.clear(); state.value = SessionState.Inactive }
+            this.userId.value = userId
+            secondClassroomState.value = SessionState.Active
+            userDao.setActive(userId)
+            return
+        }
         // 恢复 Cookie
         cookieStorage.restore(decodeCookies(savedCookies))
 
@@ -272,9 +250,13 @@ class SessionManagerImpl(
         this.userId.value = userId
         state.value = SessionState.Active
 
-        // 第二课堂登录失败不影响教务系统登录
-        runCatching {
-            loginSecondClassroom(userId, secondClassroomPassword)
+        if (!sameUser) secondClassroomState.value = SessionState.Inactive
+        if (target.secondClassroom) {
+            try {
+                loginSecondClassroom(userId, secondClassroomPassword)
+                secondClassroomState.value = SessionState.Active
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { secondClassroomState.value = SessionState.Expired }
         }
     }
 
@@ -330,14 +312,15 @@ class SessionManagerImpl(
         userId: String,
         password: String,
         secondClassroomPassword: String,
+        target: LoginTarget = LoginTarget.Both,
     ) {
-        secureStore.put(userId, password)
+        val saved = userDao.user(userId)
+        if (target.academic) secureStore.put(userId, password)
+        secureStore.put(loginTargetKey(userId), mergeTargets(saved?.let { savedTarget(userId) }, target).name)
         if (secondClassroomPassword.isNotBlank()) {
             secureStore.put(secondClassroomPasswordKey(userId), secondClassroomPassword)
         }
-        secureStore.put(cookieKey(userId), encodeCookies(cookieStorage.snapshot()))
-
-        val saved = userDao.user(userId)
+        if (target.academic) secureStore.put(cookieKey(userId), encodeCookies(cookieStorage.snapshot()))
 
         userDao.save(
             UserEntity(
@@ -374,11 +357,16 @@ class SessionManagerImpl(
         userDao.setActive(user.userId)
         state.value = SessionState.Active
 
-        // 复用 Cookie 后同步第二课堂登录态
-        runCatching {
-            loginSecondClassroom(user.userId, resolvedSecondClassroomPassword(user))
+        val credentials = credentialsFor(user)
+        activeLogin = credentials
+        secondClassroomState.value = SessionState.Inactive
+        if (credentials.target.secondClassroom) {
+            try {
+                loginSecondClassroom(user.userId, credentials.secondClassroomPassword)
+                secondClassroomState.value = SessionState.Active
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { secondClassroomState.value = SessionState.Expired }
         }
-
         return true
     }
 
@@ -414,18 +402,27 @@ class SessionManagerImpl(
 
     /** 切换账号，供删除账号后回退使用。 */
     private suspend fun switchAccountInternal(user: UserEntity) {
-        if (restoreAndValidate(user)) return
+        val credentials = credentialsFor(user)
+        if (credentials.target.academic && restoreAndValidate(user)) return
+        if (credentials.target.academic && credentials.password.isBlank()) throw SessionExpiredException()
+        establish(user.userId, credentials.password, credentials.secondClassroomPassword,
+            if (credentials.target.academic) cookiesFor(user) else "", target = credentials.target)
+        activeLogin = credentials
+    }
 
-        val password = secureStore.get(user.userId) ?: return
+    private fun savedTarget(userId: String): LoginTarget =
+        secureStore.get(loginTargetKey(userId))?.let { value -> LoginTarget.entries.firstOrNull { it.name == value } } ?: LoginTarget.Both
 
-        runCatching {
-            establish(
-                userId = user.userId,
-                password = password,
-                secondClassroomPassword = resolvedSecondClassroomPassword(user),
-                savedCookies = cookiesFor(user),
-            )
-        }
+    private fun mergeTargets(previous: LoginTarget?, current: LoginTarget): LoginTarget = when {
+        (previous?.academic == true || current.academic) && (previous?.secondClassroom == true || current.secondClassroom) -> LoginTarget.Both
+        previous?.academic == true || current.academic -> LoginTarget.Academic
+        else -> LoginTarget.SecondClassroom
+    }
+
+    private suspend fun credentialsFor(user: UserEntity): LoginRequest {
+        val target = savedTarget(user.userId)
+        return LoginRequest(user.userId, if (target.academic) secureStore.get(user.userId).orEmpty() else "",
+            if (target.secondClassroom) resolvedSecondClassroomPassword(user) else "", target = target)
     }
 
     /** 返回账号的第二课堂密码，缺省为学号，并迁移旧版 Room 字段。 */
@@ -440,8 +437,8 @@ class SessionManagerImpl(
             ?.let { return it }
 
         val password = user.secondClassroomPassword.ifBlank { userId }
-        secureStore.put(secondClassroomPasswordKey(userId), password)
         if (user.secondClassroomPassword.isNotBlank()) {
+            secureStore.put(secondClassroomPasswordKey(userId), password)
             userDao.save(user.copy(secondClassroomPassword = ""))
         }
         return password
@@ -459,6 +456,7 @@ class SessionManagerImpl(
     }
 
     private companion object {
+        fun loginTargetKey(userId: String) = "login-target:$userId"
         fun cookieKey(userId: String) = "cookies:$userId"
 
         fun secondClassroomPasswordKey(userId: String) = "second-classroom-password:$userId"

@@ -33,6 +33,9 @@ internal class RoutedAcademicAffairs(private val backend: suspend (String) -> Ac
         override suspend fun getCourseTimetable(semester: Semester): CourseTimetable =
             backend("enrollment.getCourseTimetable").enrollment.getCourseTimetable(semester)
 
+        override suspend fun getCourseTimetableSemesters(): List<Semester> =
+            backend("enrollment.getCourseTimetableSemesters").enrollment.getCourseTimetableSemesters()
+
         override suspend fun getExamSchedule(semester: Semester): ExamSchedule =
             backend("enrollment.getExamSchedule").enrollment.getExamSchedule(semester)
 
@@ -87,6 +90,9 @@ internal class RoutedAcademicAffairs(private val backend: suspend (String) -> Ac
 
         override suspend fun getSelectedCourses(): List<SelectedCourse> =
             backend("courseSystem.getSelectedCourses").courseSystem.getSelectedCourses()
+
+        override suspend fun getSelectedCourseTimetable(): SelectedCourseTimetable =
+            backend("courseSystem.getSelectedCourseTimetable").courseSystem.getSelectedCourseTimetable()
 
         override suspend fun getCourseDropLogs(): List<CourseDropLog> =
             backend("courseSystem.getCourseDropLogs").courseSystem.getCourseDropLogs()

@@ -40,25 +40,31 @@ class AcademicProgramViewModel(
     val uiState: StateFlow<AcademicProgramUiState>
         field = MutableStateFlow<AcademicProgramUiState>(AcademicProgramUiState.Loading)
 
+    val isRefreshing: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
     init {
         refresh()
     }
 
     /** 刷新培养方案。 */
     fun refresh() {
+        if (isRefreshing.value) return
+        isRefreshing.value = true
         viewModelScope.launch {
-            uiState.value = AcademicProgramUiState.Loading
-
-            // 未登录时不请求受保护接口，先等待自动登录
-            if (!sessionManager.isLoggedInWithWait()) {
-                uiState.value = AcademicProgramUiState.NotLoggedIn
-                return@launch
-            }
-            uiState.value = runSuspendCatching { repository.getAcademicProgram().html }
-                .fold(
+            if (uiState.value !is AcademicProgramUiState.Success) uiState.value = AcademicProgramUiState.Loading
+            try {
+                if (!sessionManager.isLoggedInWithWait()) {
+                    uiState.value = AcademicProgramUiState.NotLoggedIn
+                    return@launch
+                }
+                uiState.value = runSuspendCatching { repository.getAcademicProgram().html }.fold(
                     onSuccess = AcademicProgramUiState::Success,
                     onFailure = AcademicProgramUiState::Error,
                 )
+            } finally {
+                isRefreshing.value = false
+            }
         }
     }
 }

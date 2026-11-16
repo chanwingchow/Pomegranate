@@ -2,6 +2,7 @@ package com.chow.pomegranate.service.academic.affairs.model
 
 import com.chow.pomegranate.service.foundation.Semester
 import kotlinx.datetime.DayOfWeek
+import kotlinx.serialization.Serializable
 
 /**
  * 课表。
@@ -29,6 +30,7 @@ data class Timetable(
  * @property sections 节次
  * @property clazz 上课班级
  */
+@Serializable
 data class TimetableCourse(
     val name: String,
     val teacher: String?,

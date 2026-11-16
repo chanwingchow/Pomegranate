@@ -1,5 +1,8 @@
 package com.chow.pomegranate.ui.screen.feature
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.plus
@@ -22,10 +25,13 @@ import androidx.navigation3.runtime.NavKey
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.academic_program
 import com.chow.pomegranate.refresh
+import com.chow.pomegranate.ui.component.BackToTopButton
 import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.ErrorContent
+import com.chow.pomegranate.ui.component.EmptyContent
 import com.chow.pomegranate.ui.component.LoadingContent
 import com.chow.pomegranate.ui.component.PomTopAppBar
+import com.chow.pomegranate.ui.component.PomPullToRefreshBox
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import de.charlex.compose.htmltext.material3.HtmlText
@@ -81,11 +87,13 @@ private fun AcademicProgramContent(
     viewModel: AcademicProgramViewModel? = null,
 ) {
     val backStack = LocalBackStack.current
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     // 打开培养方案中的链接
     val uriHandler = LocalUriHandler.current
 
     // UI 状态
+    val refreshing = viewModel?.isRefreshing?.collectAsState()?.value == true
     val uiState = viewModel?.uiState?.collectAsState()?.value
 
     Scaffold(
@@ -116,47 +124,54 @@ private fun AcademicProgramContent(
                 },
             )
         },
+        floatingActionButton = { BackToTopButton(listState) },
     ) { innerPadding ->
         val contentPadding = innerPadding + PaddingValues(16.dp)
 
-        when (uiState) {
-            is AcademicProgramUiState.NotLoggedIn -> {
-                // 未登录，不请求受保护接口，直接引导登录
-                NotLoggedInContent(
-                    onLogin = { backStack.add(LoginRoute) },
-                    contentPadding = contentPadding,
-                )
-            }
+        PomPullToRefreshBox(refreshing && uiState is AcademicProgramUiState.Success, { viewModel?.refresh() },
+            contentPadding = innerPadding, enabled = uiState is AcademicProgramUiState.Success) {
+            when (uiState) {
+                is AcademicProgramUiState.NotLoggedIn -> {
+                    // 未登录，不请求受保护接口，直接引导登录
+                    NotLoggedInContent(
+                        onLogin = { backStack.add(LoginRoute) },
+                        contentPadding = contentPadding,
+                    )
+                }
 
-            is AcademicProgramUiState.Error -> {
-                // 加载失败
-                ErrorContent(
-                    throwable = uiState.throwable,
-                    contentPadding = contentPadding,
-                )
-            }
+                is AcademicProgramUiState.Error -> {
+                    // 加载失败
+                    ErrorContent(
+                        throwable = uiState.throwable,
+                        contentPadding = contentPadding,
+                    )
+                }
 
-            is AcademicProgramUiState.Success -> {
-                // 培养方案内容
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = contentPadding,
-                ) {
-                    item {
-                        HtmlText(
-                            text = uiState.html,
-                            style = MaterialTheme.typography.bodyMedium,
-                            onUriClick = { uriHandler.openUri(it) },
-                        )
+                is AcademicProgramUiState.Success -> {
+                    // 培养方案内容
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    if (uiState.html.isBlank()) EmptyContent(contentPadding = contentPadding, message = "暂无培养方案")
+                    else LazyColumn(
+                        modifier = Modifier.widthIn(max = 840.dp).fillMaxSize(), state = listState,
+                        contentPadding = contentPadding,
+                    ) {
+                        item {
+                            HtmlText(
+                                text = uiState.html,
+                                style = MaterialTheme.typography.bodyLarge,
+                                onUriClick = { uriHandler.openUri(it) },
+                            )
+                        }
+                    }
                     }
                 }
-            }
 
-            else -> {
-                // 加载中
-                LoadingContent(
-                    contentPadding = contentPadding,
-                )
+                else -> {
+                    // 加载中
+                    LoadingContent(
+                        contentPadding = contentPadding,
+                    )
+                }
             }
         }
     }

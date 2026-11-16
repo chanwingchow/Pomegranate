@@ -6,6 +6,7 @@ package com.chow.pomegranate.service.academic.affairs.model
  * @property searchRoute 搜索课程路由
  * @property operateRoute 操作（选课退课）路由
  */
+@kotlinx.serialization.Serializable
 enum class CourseSelectCategory(
     val searchRoute: String,
     val operateRoute: String = searchRoute.lowercase(),

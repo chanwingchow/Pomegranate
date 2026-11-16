@@ -7,8 +7,15 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -25,6 +32,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.ManageAccounts
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.twotone.ColorLens
 import androidx.compose.material.icons.twotone.Face4
 import androidx.compose.material.icons.twotone.School
@@ -62,6 +72,10 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.chow.pomegranate.ui.component.ExpressiveActionCard
+import com.chow.pomegranate.ui.component.ExpressiveIconBadge
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -85,6 +99,10 @@ import com.chow.pomegranate.login
 import com.chow.pomegranate.settings
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.screen.account.AccountRoute
+import com.chow.pomegranate.ui.screen.account.AccountNicknameRoute
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.ui.text.style.TextOverflow
 import com.chow.pomegranate.ui.screen.settings.SettingsRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import com.chow.pomegranate.wallpaper
@@ -93,14 +111,11 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import com.chow.pomegranate.ui.screen.login.LoginRoute
-import com.github.skydoves.colorpicker.compose.HsvColorPicker
-import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.chow.pomegranate.save
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import com.github.skydoves.colorpicker.compose.AlphaSlider
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
+import com.chow.pomegranate.ui.component.PomTextField
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.LaunchedEffect
 import com.chow.pomegranate.color_hex
@@ -113,10 +128,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.ImeAction
 import kotlinx.coroutines.launch
-
-/** 十六进制颜色长度：6 位为 RGB，8 位为 ARGB。 */
-private const val HEX_COLOR_LENGTH_RGB = 6
-private const val HEX_COLOR_LENGTH_ARGB = 8
 
 /**
  * 壁纸遮罩透明度。
@@ -174,6 +185,8 @@ private fun MeContent(
 
     // 当前登录用户
     val userId = viewModel?.sessionManager?.userId?.collectAsState()?.value
+    val accounts = viewModel?.sessionManager?.accounts?.collectAsState()?.value.orEmpty()
+    val nickname = viewModel?.nickname?.collectAsState()?.value
 
     // 性别
     val gender = viewModel?.gender?.collectAsState()?.value ?: Gender.Default
@@ -185,355 +198,58 @@ private fun MeContent(
     val themeColor = viewModel?.themeColor?.collectAsState()?.value
 
     // 主题色选择弹窗
-    var colorPickerVisible by remember { mutableStateOf(false) }
+
 
     // 每日壁纸
     val wallpaperUrl = viewModel?.wallpaperUrl?.collectAsState()?.value
 
     // 头像是应用私有文件的 URI，不是远端账户资料。
     val avatar = viewModel?.avatarUri?.collectAsState()?.value
-    val snackbarHostState = LocalSnackbarHostState.current
-    val scope = rememberCoroutineScope()
-    val avatarUpdatedMessage = stringResource(Res.string.avatar_updated)
-    val avatarRestoredMessage = stringResource(Res.string.avatar_restored)
-    val avatarLocalOnlyMessage = stringResource(Res.string.avatar_local_only)
-    var avatarActionsVisible by remember { mutableStateOf(false) }
-    val avatarPicker = rememberAvatarPicker { result ->
-        when (result) {
-            is AvatarPickResult.Selected -> {
-                viewModel?.setLocalAvatar(result.localUri)
-                scope.launch { snackbarHostState.showSnackbar(avatarUpdatedMessage) }
-            }
-            is AvatarPickResult.Failed -> scope.launch { snackbarHostState.showSnackbar(result.message) }
-            is AvatarPickResult.Unavailable -> scope.launch { snackbarHostState.showSnackbar(result.message) }
-        }
-    }
-
-    var expanded by remember { mutableStateOf(true) }
-    val userCardHeight by animateDpAsState(
-        if (expanded) 180.dp else 88.dp
-    )
-
-    Scaffold(
-        modifier = modifier,
-    ) { innerPadding ->
-        val paddingStart = innerPadding.calculateStartPadding(
-            layoutDirection = layoutDirection,
-        )
-        val paddingTop = innerPadding.calculateTopPadding()
-        val paddingEnd = innerPadding.calculateEndPadding(
-            layoutDirection = layoutDirection,
-        )
-        val paddingBottom = innerPadding.calculateBottomPadding()
-
-        Column(
-            modifier = Modifier.padding(
-                start = paddingStart,
-                top = paddingTop,
-                end = paddingEnd,
-            ),
-        ) {
-            // 用户卡片
-            UserCard(
-                onClick = {
-                    if (userId == null) {
-                        // 未登录时直接进入登录页，不弹账号管理
-                        backStack.add(LoginRoute)
-                    } else {
-                        // 已登录时打开账号管理
-                        backStack.add(AccountRoute)
-                    }
-                },
-                avatar = avatar,
-                onAvatarClick = { avatarActionsVisible = true },
-                background = wallpaperUrl,
-                userId = userId,
-                modifier = Modifier.padding(16.dp).height(userCardHeight),
-            )
-
+    Scaffold(modifier = modifier) { innerPadding ->
+        Box(Modifier.fillMaxSize().padding(
+            start = innerPadding.calculateStartPadding(layoutDirection),
+            top = innerPadding.calculateTopPadding(),
+            end = innerPadding.calculateEndPadding(layoutDirection)), contentAlignment = Alignment.TopCenter) {
             LazyColumn(
-                modifier = Modifier.weight(1f).floatingToolbarVerticalNestedScroll(
+                modifier = Modifier.widthIn(max = 840.dp).fillMaxSize().floatingToolbarVerticalNestedScroll(
                     expanded = toolbarExpanded,
-                    onExpand = {
-                        onToolbarExpandedChange(true)
-                        expanded = true
-                    },
-                    onCollapse = {
-                        onToolbarExpandedChange(false)
-                        expanded = false
-                    },
+                    onExpand = { onToolbarExpandedChange(true) },
+                    onCollapse = { onToolbarExpandedChange(false) },
                 ),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp + paddingBottom + with(FloatingToolbarDefaults) {
-                        // 悬浮工具栏高度
-                        ContainerSize + ScreenOffset
-                    },
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                item {
-                    TagGroup(
-                        campus = campus,
-                        onToggleCampus = { viewModel?.toggleCampus() },
-                        gender = gender,
-                        onToggleGender = { viewModel?.toggleGender() },
-                        themeColor = themeColor,
-                        onPickColor = { colorPickerVisible = true },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                item {
-                    // 设置
-                    OutlinedCard(
-                        onClick = {
-                            // 跳转到设置页
-                            backStack.add(SettingsRoute)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Outlined.Settings,
-                            contentDescription = stringResource(Res.string.settings),
-                            modifier = Modifier.padding(8.dp),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    if (colorPickerVisible) {
-        // 主题色选择
-        ThemeColorDialog(
-            selected = themeColor,
-            onColorChange = { viewModel?.setThemeColor(it) },
-            onSave = { viewModel?.commitThemeColor() },
-            onCancel = { viewModel?.cancelThemeColor() },
-            onReset = { viewModel?.resetThemeColor() },
-            onDismiss = { colorPickerVisible = false },
-        )
-    }
-
-    if (avatarActionsVisible) {
-        AlertDialog(
-            onDismissRequest = { avatarActionsVisible = false },
-            title = { Text(stringResource(Res.string.avatar)) },
-            text = { Text(avatarLocalOnlyMessage) },
-            confirmButton = {
-                TextButton(onClick = {
-                    avatarActionsVisible = false
-                    avatarPicker()
-                }) { Text(stringResource(Res.string.change_avatar)) }
-            },
-            dismissButton = {
-                if (avatar != null) {
-                    TextButton(onClick = {
-                        viewModel.clearLocalAvatar()
-                        avatarActionsVisible = false
-                        scope.launch { snackbarHostState.showSnackbar(avatarRestoredMessage) }
-                    }) { Text(stringResource(Res.string.restore_default_avatar)) }
-                }
-            },
-        )
-    }
-}
-
-/**
- * 主题色选择弹窗。
- *
- * 圆形色盘选色 + 透明度滑块，并实时展示当前颜色。
- */
-@Composable
-private fun ThemeColorDialog(
-    selected: Color?,
-    onColorChange: (Color) -> Unit,
-    onSave: () -> Unit,
-    onCancel: () -> Unit,
-    onReset: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val controller = rememberColorPickerController()
-
-    // 当前颜色，含透明度
-    var color by remember { mutableStateOf(selected ?: DEFAULT_PRIMARY_COLOR) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(stringResource(Res.string.favorite_color))
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp,
+                    bottom = 16.dp + innerPadding.calculateBottomPadding() + with(FloatingToolbarDefaults) { ContainerSize + ScreenOffset }),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // 圆形色盘
-                HsvColorPicker(
-                    modifier = Modifier.fillMaxWidth().height(240.dp),
-                    controller = controller,
-                    initialColor = color,
-                    onColorChanged = { envelope ->
-                        color = envelope.color.copy(alpha = color.alpha)
-
-                        // 拖动时即时预览
-                        onColorChange(color)
-                    },
-                )
-
-                // 透明度
-                AlphaSlider(
-                    modifier = Modifier.fillMaxWidth().height(36.dp),
-                    controller = controller,
-                    initialColor = color,
-                    onColorChanged = { envelope ->
-                        // 透明滑块给出的是带 alpha 的颜色
-                        color = envelope.color
-                        onColorChange(color)
-                    },
-                )
-
-                // 选中颜色展示与十六进制输入
-                SelectedColorPreview(
-                    color = color,
-                    onColorChange = { picked ->
-                        color = picked
-                        onColorChange(picked)
-                    },
-                )
-            }
-        },
-        confirmButton = {
-            Row {
-                // 取消：放弃本次修改并关闭
-                TextButton(
-                    onClick = {
-                        onCancel()
-                        onDismiss()
-                    },
-                ) {
-                    Text(stringResource(Res.string.cancel))
+                item(key = "profile") {
+                    UserCard(onClick = { backStack.add(if (userId == null) LoginRoute else AccountRoute) },
+                        avatar = avatar, onAvatarClick = { backStack.add(AvatarActionsRoute) },
+                        background = wallpaperUrl, userId = userId, nickname = nickname,
+                        onEditNickname = userId?.let { id -> { backStack.add(AccountNicknameRoute(id, accounts.firstOrNull { it.userId == id }?.isDemo == true, nickname.orEmpty())) } },
+                        modifier = Modifier.fillMaxWidth().height(180.dp))
                 }
-
-                // 保存：保留当前颜色并关闭
-                TextButton(
-                    onClick = {
-                        onSave()
-                        onDismiss()
-                    },
-                ) {
-                    Text(stringResource(Res.string.save))
+                item(key = "palette") {
+                    MeActionRow(stringResource(Res.string.favorite_color), Icons.TwoTone.ColorLens, 2) {
+                        backStack.add(ThemeColorRoute(themeColor?.toHexString()))
+                    }
+                }
+                item(key = "preferences") {
+                    BoxWithConstraints(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large)) {
+                        val stacked = maxWidth < 320.dp || LocalDensity.current.fontScale > 1.3f
+                        val tiles: @Composable (Modifier) -> Unit = { tileModifier ->
+                            MeToggleTile("校区", stringResource(campus.label), Icons.TwoTone.School, 0,
+                                { viewModel?.toggleCampus() }, tileModifier)
+                            MeToggleTile("性别", stringResource(gender.label), gender.icon, 1,
+                                { viewModel?.toggleGender() }, tileModifier)
+                        }
+                        if (stacked) Column(verticalArrangement = Arrangement.spacedBy(2.dp)) { tiles(Modifier.fillMaxWidth()) }
+                        else Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { tiles(Modifier.weight(1f)) }
+                    }
+                }
+                item(key = "settings") {
+                    MeActionRow(stringResource(Res.string.settings), Icons.Outlined.Settings, 1) { backStack.add(SettingsRoute) }
                 }
             }
-        },
-        dismissButton = {
-            // 重置：回到默认色，弹窗保持打开以便继续调整
-            TextButton(
-                onClick = {
-                    color = DEFAULT_PRIMARY_COLOR
-                    controller.selectByColor(DEFAULT_PRIMARY_COLOR, fromUser = false)
-                    onReset()
-                },
-            ) {
-                Text(stringResource(Res.string.reset))
-            }
-        },
-    )
-}
-
-/**
- * 选中颜色展示。
- *
- * 左侧是颜色色块（棋盘衬底便于看出透明），右侧可直接输入十六进制颜色。
- *
- * @param color 当前颜色
- * @param onColorChange 输入合法时回调新颜色
- */
-@Composable
-private fun SelectedColorPreview(
-    color: Color,
-    onColorChange: (Color) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // 输入框内容，用户可直接编辑
-    var input by remember { mutableStateOf(color.toHexString().uppercase()) }
-
-    // 颜色由色盘或透明度滑块改变时才同步到输入框。
-    // 若当前文本已经对应这个颜色，说明这次改变来自输入框本身，不能回写，
-    // 否则用户每删到 6 位合法值就会被补全，永远删不干净。
-    LaunchedEffect(color) {
-        if (input.toColor() != color) {
-            input = color.toHexString().uppercase()
         }
-    }
-
-    // 只有完整的 6 位或 8 位才算合法
-    val isValid = input.length in setOf(HEX_COLOR_LENGTH_RGB, HEX_COLOR_LENGTH_ARGB) &&
-        input.toColor() != null
-
-    // 输入是否已获得焦点，用于判断编辑结束
-    var isFocused by remember { mutableStateOf(false) }
-
-    // 编辑结束后才应用输入的颜色。
-    // 若每次按键都应用，删除过程中经过的 6 位合法值会被当成新颜色，导致颜色乱跳。
-    val applyInput = {
-        if (isValid) input.toColor()?.let(onColorChange)
-    }
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // 颜色色块
-        Surface(
-            shape = MaterialTheme.shapes.small,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            modifier = Modifier.size(40.dp),
-        ) {
-            Box(modifier = Modifier.fillMaxSize().background(color))
-        }
-
-        // 十六进制输入
-        OutlinedTextField(
-            value = input,
-            onValueChange = { value ->
-                // 只保留十六进制字符，最多 8 位，允许清空
-                input = value
-                    .filter { it.isLetterOrDigit() }
-                    .take(HEX_COLOR_LENGTH_ARGB)
-                    .uppercase()
-            },
-            modifier = Modifier
-                .weight(1f)
-                .onFocusChanged { state ->
-                    // 离开输入框时应用
-                    if (isFocused && !state.isFocused) applyInput()
-                    isFocused = state.isFocused
-                },
-            label = {
-                Text(stringResource(Res.string.color_hex))
-            },
-            singleLine = true,
-            isError = !isValid,
-            supportingText = if (isValid) {
-                null
-            } else {
-                {
-                    Text(stringResource(Res.string.color_hex_invalid))
-                }
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Ascii,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(
-                // 按下完成键时应用
-                onDone = { applyInput() },
-            ),
-        )
     }
 }
 
@@ -547,6 +263,8 @@ private fun UserCard(
     avatar: Any?,
     background: Any?,
     userId: String?,
+    nickname: String? = null,
+    onEditNickname: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -608,17 +326,24 @@ private fun UserCard(
 
                 Column(
                     modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     // 昵称
+                    Row(modifier = if (onEditNickname != null) Modifier.clickable(onClick = onEditNickname, onClickLabel = "修改昵称") else Modifier,
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        stringResource(Res.string.app_name),
+                        nickname ?: stringResource(Res.string.app_name),
+                        modifier = Modifier.weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis,
                         fontWeight = FontWeight.SemiBold,
                         style = MaterialTheme.typography.titleMedium,
                     )
+                    if (onEditNickname != null) Icon(Icons.Rounded.Edit, "修改昵称", Modifier.size(16.dp))
+                    }
 
                     // 学号
                     Text(
                         userId ?: stringResource(Res.string.login),
+                        modifier = Modifier.clickable(onClickLabel = if (userId == null) "登录" else "账号管理", onClick = onClick),
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
@@ -682,136 +407,26 @@ private fun RotatingAvatar(
     }
 }
 
-/**
- * 标签组。
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun TagGroup(
-    campus: CampusOption,
-    onToggleCampus: () -> Unit,
-    gender: Gender,
-    onToggleGender: () -> Unit,
-    themeColor: Color?,
-    onPickColor: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val shapes = listOf(
-        MaterialShapes.Cookie4Sided.toShape(),
-        MaterialShapes.Cookie6Sided.toShape(),
-        MaterialShapes.Clover8Leaf.toShape(),
-    )
-
-    FlowRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        // 校区，点击切换
-        Tag(
-            onClick = onToggleCampus,
-            icon = {
-                Icon(
-                    Icons.TwoTone.School,
-                    contentDescription = stringResource(Res.string.campus),
-                )
-            },
-            label = {
-                Text(
-                    stringResource(campus.label),
-                )
-            },
-            modifier = Modifier.padding(horizontal = 4.dp),
-            shape = shapes.random(),
-        )
-
-        // 性别，点击切换
-        Tag(
-            onClick = onToggleGender,
-            icon = {
-                Icon(
-                    gender.icon,
-                    contentDescription = stringResource(Res.string.gender),
-                )
-            },
-            label = {
-                Text(
-                    stringResource(gender.label),
-                )
-            },
-            modifier = Modifier.padding(horizontal = 4.dp),
-            shape = shapes.random(),
-        )
-
-        // 喜欢的颜色，点击选择主题色
-        Tag(
-            onClick = onPickColor,
-            icon = {
-                Surface(
-                    shape = MaterialShapes.Clover4Leaf.toShape(),
-                    // 色块直接用选中的主题色
-                    color = themeColor ?: MaterialTheme.colorScheme.primary,
-                    // 图标用 onPrimary，与色块形成对比，避免看不清
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shadowElevation = 1.dp,
-                ) {
-                    Icon(
-                        Icons.TwoTone.ColorLens,
-                        contentDescription = stringResource(Res.string.favorite_color),
-                        modifier = Modifier.padding(2.dp),
-                    )
-                }
-            },
-            label = {
-                Text(
-                    stringResource(Res.string.favorite_color),
-                )
-            },
-            modifier = Modifier.padding(horizontal = 4.dp),
-            shape = shapes.random(),
-        )
-    }
+private fun MeActionRow(title: String, icon: ImageVector, variant: Int, onClick: () -> Unit) {
+    com.chow.pomegranate.ui.component.PomSettingRow(title, icon, variant, onClick = onClick)
 }
 
-/**
- * 标签。
- */
 @Composable
-private fun Tag(
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit,
-    label: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    shape: Shape = RectangleShape,
-) {
-    ElevatedCard(
-        onClick = onClick,
-        modifier = modifier,
-        shape = shape,
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 图标
-            Box(
-                modifier = Modifier.size(20.dp),
-                propagateMinConstraints = true,
-            ) {
-                icon()
+private fun MeToggleTile(title: String, value: String, icon: ImageVector, variant: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val interactions = remember { MutableInteractionSource() }
+    val pressed by interactions.collectIsPressedAsState()
+    Surface(onClick, modifier, interactionSource = interactions, shape = RectangleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                ExpressiveIconBadge(icon, variant, pressed, Modifier.size(28.dp), iconSize = 18.dp)
+                Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-
-            // 标签
-            CompositionLocalProvider(
-                LocalTextStyle provides MaterialTheme.typography.labelSmall,
-                content = label,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(value, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Icon(Icons.Rounded.SwapHoriz, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

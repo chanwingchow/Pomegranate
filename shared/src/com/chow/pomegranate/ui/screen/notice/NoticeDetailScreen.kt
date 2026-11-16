@@ -35,6 +35,8 @@ import com.chow.pomegranate.open_link_failed
 import com.chow.pomegranate.repository.NoticeDetail
 import com.chow.pomegranate.repository.NoticeRepository
 import com.chow.pomegranate.service.academic.notice.model.BasicNotice
+import com.chow.pomegranate.ui.component.BackToTopButton
+import com.chow.pomegranate.ui.component.isStudyTwoPane
 import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.ErrorContent
 import com.chow.pomegranate.ui.component.LoadingContent
@@ -46,6 +48,8 @@ import de.charlex.compose.htmltext.material3.HtmlText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -89,19 +93,21 @@ class NoticeDetailViewModel(
 
     /** 已加载的通知链接，避免重复请求。 */
     private var loadedUrl: String? = null
+    private var request: Job? = null
 
     /** 加载 [notice] 的详情。 */
     fun load(notice: BasicNotice) {
-        if (loadedUrl == notice.urlString && uiState.value is NoticeDetailUiState.Success) return
+        if (loadedUrl == notice.urlString && (uiState.value is NoticeDetailUiState.Success || request?.isActive == true)) return
+        request?.cancel()
 
         loadedUrl = notice.urlString
 
-        viewModelScope.launch {
+        request = viewModelScope.launch {
             uiState.value = NoticeDetailUiState.Loading
             uiState.value = runCatching { repository.getNotice(notice) }
                 .fold(
                     onSuccess = NoticeDetailUiState::Success,
-                    onFailure = NoticeDetailUiState::Error,
+                    onFailure = { if (it is CancellationException) throw it else NoticeDetailUiState.Error(it) },
                 )
         }
     }
@@ -149,6 +155,8 @@ private fun NoticeDetailScreen(
         }
     }
 
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val twoPane = isStudyTwoPane()
     // UI 状态
     val uiState by viewModel.uiState.collectAsState()
 
@@ -167,7 +175,7 @@ private fun NoticeDetailScreen(
                     )
                 },
                 navigationIcon = {
-                    BackIconButton(onClick = { backStack.removeLastOrNull() })
+                    if (!twoPane) BackIconButton(onClick = { backStack.removeLastOrNull() })
                 },
                 actions = {
                     // 在浏览器打开
@@ -182,6 +190,7 @@ private fun NoticeDetailScreen(
                 },
             )
         },
+        floatingActionButton = { BackToTopButton(listState) },
     ) { innerPadding ->
         val contentPadding = innerPadding + PaddingValues(16.dp)
 
@@ -195,6 +204,7 @@ private fun NoticeDetailScreen(
 
             is NoticeDetailUiState.Success -> NoticeDetailContent(
                 detail = state.detail,
+                listState = listState,
                 onOpenInBrowser = openLink,
                 contentPadding = contentPadding,
             )
@@ -210,8 +220,10 @@ private fun NoticeDetailContent(
     detail: NoticeDetail,
     onOpenInBrowser: (String) -> Unit,
     contentPadding: PaddingValues,
+    listState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
 ) {
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -230,7 +242,7 @@ private fun NoticeDetailContent(
                 // 发布日期
                 Text(
                     detail.date,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -240,11 +252,11 @@ private fun NoticeDetailContent(
         detail.pdfUrlString?.let { pdfUrl ->
             item {
                 Text(
-                    text = pdfUrl,
+                    text = "打开通知 PDF",
                     // 打开 PDF 本身，而不是通知页——否则用户点进去还是同一个页面
                     modifier = Modifier.clickable { onOpenInBrowser(pdfUrl) },
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
         }
@@ -255,7 +267,7 @@ private fun NoticeDetailContent(
                 HtmlText(
                     text = detail.html,
                     onUriClick = onOpenInBrowser,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
         }

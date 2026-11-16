@@ -4,6 +4,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
+import kotlinx.serialization.Serializable
 
 /**
  * 学期。
@@ -11,6 +12,7 @@ import kotlin.time.Clock
  * @property year 学年起始年
  * @property term 学期分段
  */
+@Serializable
 data class Semester(
     val year: Int,
     val term: Term,
@@ -96,6 +98,7 @@ data class Semester(
     /**
      * 学期分段。
      */
+    @Serializable
     enum class Term(val number: Int) {
         /** 上学期 */
         First(1),

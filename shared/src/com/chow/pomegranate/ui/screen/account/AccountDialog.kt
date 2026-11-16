@@ -1,292 +1,153 @@
 package com.chow.pomegranate.ui.screen.account
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.CheckCircle
-import androidx.compose.material.icons.twotone.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.scene.DialogSceneStrategy
-import com.chow.pomegranate.Res
-import com.chow.pomegranate.account_management
-import com.chow.pomegranate.account_operation_failed
-import com.chow.pomegranate.add_account
-import com.chow.pomegranate.cancel
-import com.chow.pomegranate.confirm_delete_account
-import com.chow.pomegranate.current_account
-import com.chow.pomegranate.delete
-import com.chow.pomegranate.login
-import com.chow.pomegranate.no_accounts
+import com.chow.pomegranate.*
 import com.chow.pomegranate.session.Account
+import com.chow.pomegranate.session.LoginTarget
 import com.chow.pomegranate.session.SessionManager
+import com.chow.pomegranate.ui.component.*
 import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
+import com.chow.pomegranate.repository.AccountNicknameRepository
+import com.chow.pomegranate.repository.accountNicknameKey
 import com.chow.pomegranate.ui.screen.login.LoginRoute
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import com.chow.pomegranate.ui.component.LocalSnackbarHostState
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import com.chow.pomegranate.confirm_logout
-import com.chow.pomegranate.logout
 
-/**
- * 账号管理弹窗路由。
- */
-@Serializable
-data object AccountRoute : NavKey
+@Serializable data object AccountRoute : NavKey
+@Serializable data class AccountConfirmRoute(val userId: String? = null) : NavKey
 
-/**
- * 注册账号管理弹窗。
- *
- * 与 OTP 编辑弹窗一致，通过 [DialogSceneStrategy] 渲染为弹窗场景，
- * 这样下层内容仍会透出，返回键也能正确关闭弹窗。
- */
 fun EntryProviderScope<NavKey>.accountEntry() {
-    entry<AccountRoute>(metadata = DialogSceneStrategy.dialog()) {
-        AccountDialog()
-    }
+    entry<AccountRoute> { AccountScreen() }
+    entry<AccountConfirmRoute>(metadata = DialogSceneStrategy.dialog()) { AccountConfirmDialog(it) }
+    entry<AccountNicknameRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { AccountNicknameSheet(it) }
 }
 
-/**
- * 账号管理弹窗。
- */
 @Composable
-private fun AccountDialog(viewModel: AccountViewModel = koinViewModel()) {
+private fun AccountScreen(viewModel: AccountViewModel = koinViewModel()) {
     val backStack = LocalBackStack.current
-    val snackbarHostState = LocalSnackbarHostState.current
-    val scope = rememberCoroutineScope()
-    val operationFailedMessage = stringResource(Res.string.account_operation_failed)
-
-    val sessionManager = koinInject<SessionManager>()
-    val accounts by sessionManager.accounts.collectAsState()
-    val currentUserId by sessionManager.userId.collectAsState()
-
-    // 等待删除确认的账号
-    var pendingDelete by remember { mutableStateOf<Account?>(null) }
-
-    // 是否等待退出登录确认
-    var pendingLogout by remember { mutableStateOf(false) }
-
-    // 是否正在退出登录
-    var isLoggingOut by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = { backStack.removeLastOrNull() },
-        title = {
-            Text(stringResource(Res.string.account_management))
-        },
-        text = {
-            if (accounts.isEmpty()) {
-                // 暂无账号
-                Text(stringResource(Res.string.no_accounts))
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(accounts, key = Account::userId) { account ->
-                        AccountItem(
-                            account = account,
-                            isCurrent = account.userId == currentUserId,
-                            onClick = {
-                                // 先关弹窗，切号交给 ViewModel 跑完
-                                backStack.removeLastOrNull()
-                                viewModel.switchAccount(account.userId) { failure ->
-                                    failure?.let {
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                it.message ?: operationFailedMessage,
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            onDelete = { pendingDelete = account },
-                        )
+    val session = koinInject<SessionManager>()
+    val accounts by session.accounts.collectAsState()
+    val nicknameRepository = koinInject<AccountNicknameRepository>()
+    val nicknames by nicknameRepository.names.collectAsState(initial = emptyMap())
+    val currentId by session.userId.collectAsState()
+    val switchingId by viewModel.switchingUserId.collectAsState()
+    val error by viewModel.switchError.collectAsState()
+    val operating = switchingId != null
+    val listState = rememberLazyListState()
+    Scaffold(topBar = {
+        PomTopAppBar(title = { Text(stringResource(Res.string.account_management)) },
+            navigationIcon = { BackIconButton(onClick = { backStack.removeLastOrNull() }) },
+            actions = { IconButton(onClick = { backStack.add(LoginRoute) }, enabled = !operating) {
+                Icon(Icons.Rounded.Add, stringResource(Res.string.add_account))
+            } })
+    }, floatingActionButton = { BackToTopButton(listState) }, bottomBar = {
+        if (currentId != null) Surface(color = MaterialTheme.colorScheme.surface) {
+            TextButton(onClick = { backStack.add(AccountConfirmRoute()) }, enabled = !operating,
+                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Icon(Icons.AutoMirrored.Outlined.Logout, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.logout))
+            }
+        }
+    }) { padding ->
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            if (accounts.isEmpty()) EmptyContent(contentPadding = padding, message = stringResource(Res.string.no_accounts))
+            else LazyColumn(Modifier.widthIn(max = 720.dp).fillMaxSize(), state = listState, contentPadding = padding + PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item { Text("已保存 ${accounts.size} 个账号", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                error?.let { failure -> item {
+                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.errorContainer) {
+                        Text(failure.message ?: stringResource(Res.string.account_operation_failed), Modifier.fillMaxWidth().padding(14.dp),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
                     }
+                } }
+                itemsIndexed(accounts, key = { _, account -> account.userId }) { index, account ->
+                    SavedAccountCard(account, index, account.userId == currentId, switchingId == account.userId, operating,
+                        nickname = nicknames[accountNicknameKey(account.userId, account.isDemo)],
+                        modifier = Modifier.animateItem(), onSwitch = { viewModel.switchAccount(account.userId) },
+                        onEditNickname = { backStack.add(AccountNicknameRoute(account.userId, account.isDemo,
+                            nicknames[accountNicknameKey(account.userId, account.isDemo)].orEmpty())) },
+                        onDelete = { backStack.add(AccountConfirmRoute(account.userId)) })
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    // 关闭弹窗后进入登录页添加账号
-                    backStack.removeLastOrNull()
-                    backStack.add(LoginRoute)
-                },
-            ) {
-                Text(stringResource(Res.string.add_account))
-            }
-        },
-        dismissButton = {
-            if (currentUserId != null) {
-                // 已登录时提供退出登录
-                TextButton(
-                    onClick = { pendingLogout = true },
-                    enabled = !isLoggingOut,
-                ) {
-                    Text(stringResource(Res.string.logout))
-                }
-            } else {
-                TextButton(
-                    onClick = { backStack.removeLastOrNull() },
-                ) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            }
-        },
-    )
-
-    // 退出登录确认
-    if (pendingLogout) {
-        AlertDialog(
-            onDismissRequest = { pendingLogout = false },
-            text = {
-                Text(stringResource(Res.string.confirm_logout))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        isLoggingOut = true
-                        pendingLogout = false
-                        backStack.removeLastOrNull()
-
-                        // 登出必须跑在 ViewModel 里：弹窗已关闭，composition scope 会被取消
-                        viewModel.logout { failure ->
-                            isLoggingOut = false
-                            failure?.let {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        it.message ?: operationFailedMessage,
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    enabled = !isLoggingOut,
-                ) {
-                    Text(stringResource(Res.string.logout))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { pendingLogout = false },
-                ) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
-    }
-
-    pendingDelete?.let { account ->
-        AlertDialog(
-            onDismissRequest = { pendingDelete = null },
-            text = {
-                Text(stringResource(Res.string.confirm_delete_account, account.userId))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val userId = account.userId
-                        pendingDelete = null
-                        viewModel.deleteAccount(userId) { failure ->
-                            failure?.let {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        it.message ?: operationFailedMessage,
-                                    )
-                                }
-                            }
-                        }
-                    },
-                ) {
-                    Text(stringResource(Res.string.delete))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { pendingDelete = null },
-                ) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
+        }
     }
 }
 
-/**
- * 账号项。
- */
 @Composable
-private fun AccountItem(
-    account: Account,
-    isCurrent: Boolean,
-    onClick: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isCurrent) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-        ),
-    ) {
-        ListItem(
-            headlineContent = {
-                Text(account.userId)
-            },
-            supportingContent = {
-                if (isCurrent) {
-                    // 当前账号
-                    Text(stringResource(Res.string.current_account))
-                }
-            },
-            leadingContent = {
-                if (isCurrent) {
-                    Icon(
-                        Icons.TwoTone.CheckCircle,
-                        contentDescription = stringResource(Res.string.current_account),
-                    )
-                }
-            },
-            trailingContent = {
-                IconButton(
-                    onClick = onDelete,
-                ) {
-                    Icon(
-                        Icons.TwoTone.Delete,
-                        contentDescription = stringResource(Res.string.delete),
-                    )
-                }
-            },
-        )
+private fun SavedAccountCard(account: Account, index: Int, current: Boolean, switching: Boolean, operating: Boolean,
+    nickname: String?, modifier: Modifier = Modifier, onSwitch: () -> Unit, onEditNickname: () -> Unit, onDelete: () -> Unit) {
+    val largeText = LocalDensity.current.fontScale > 1.3f
+    val services = when (account.target) {
+        LoginTarget.Both -> "教务系统 · 第二课堂"
+        LoginTarget.Academic -> "教务系统"
+        LoginTarget.SecondClassroom -> "第二课堂"
     }
+    val information: @Composable () -> Unit = {
+        Text(nickname ?: account.userId, style = MaterialTheme.typography.titleMedium)
+        if (nickname != null) Text(account.userId, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(if (account.isDemo) "演示账号 · $services" else services, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (current) Text(stringResource(Res.string.current_account), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+    }
+    ExpressiveActionCard(onClick = { if (!current && !operating) onSwitch() }, modifier = modifier, selected = current) { pressed ->
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ExpressiveIconBadge(if (current) Icons.Rounded.CheckCircle else Icons.Rounded.PersonOutline, index, pressed, Modifier.size(36.dp), iconSize = 20.dp)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) { if (!largeText) information() }
+                if (switching) PomLoadingIndicator(size = InlineLoadingIndicatorSize)
+                IconButton(onClick = onEditNickname, enabled = !operating) { Icon(Icons.Rounded.Edit, "修改 ${account.userId} 的昵称") }
+                IconButton(onClick = onDelete, enabled = !operating) { Icon(Icons.Outlined.DeleteOutline, "删除账号 ${account.userId}") }
+            }
+            if (largeText) information()
+        }
+    }
+}
+
+@Composable
+private fun AccountConfirmDialog(route: AccountConfirmRoute, viewModel: AccountViewModel = koinViewModel()) {
+    val backStack = LocalBackStack.current
+    var operating by remember { mutableStateOf(false) }
+    val snackbar = LocalSnackbarHostState.current
+    val scope = LocalAppCoroutineScope.current ?: rememberCoroutineScope()
+    AlertDialog(onDismissRequest = { if (!operating) backStack.removeLastOrNull() },
+        properties = DialogProperties(dismissOnBackPress = !operating, dismissOnClickOutside = !operating),
+        title = { Text(if (route.userId == null) "退出登录" else "删除账号") },
+        text = { Column {
+            Text(if (route.userId == null) stringResource(Res.string.confirm_logout)
+                else stringResource(Res.string.confirm_delete_account, route.userId))
+        } },
+        confirmButton = { TextButton(enabled = !operating, onClick = {
+            operating = true
+            val onResult: (Throwable?) -> Unit = { failure ->
+                operating = false
+                backStack.removeLastOrNull()
+                if (failure != null) scope.launch {
+                    val action = if (route.userId == null) "退出失败" else "删除失败"
+                    snackbar.showSnackbar("$action：${failure.message ?: "请重试。"}")
+                }
+            }
+            if (route.userId == null) viewModel.logout(onResult) else viewModel.deleteAccount(route.userId, onResult)
+        }) { Text(if (operating) "处理中" else if (route.userId == null) "退出登录" else "删除") } },
+        dismissButton = { TextButton(enabled = !operating, onClick = { backStack.removeLastOrNull() }) { Text("取消") } })
 }

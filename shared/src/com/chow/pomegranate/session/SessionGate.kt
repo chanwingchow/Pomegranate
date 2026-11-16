@@ -25,3 +25,6 @@ suspend fun SessionManager.isLoggedInWithWait(): Boolean {
         null -> false
     }
 }
+
+suspend fun SessionManager.isSecondClassroomLoggedInWithWait(): Boolean =
+    withTimeoutOrNull(LOGIN_WAIT_TIMEOUT_MILLIS) { awaitSecondClassroomLogin() } != null

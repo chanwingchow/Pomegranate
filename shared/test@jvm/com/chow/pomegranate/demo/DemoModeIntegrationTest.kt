@@ -185,7 +185,19 @@ class DemoModeIntegrationTest {
             assertEquals(0, real.calls)
             assertEquals(SessionState.Active, session.state.value)
             assertEquals(MockAcademicAffairs.USER_ID, session.userId.value)
-            assertEquals(listOf(Account(MockAcademicAffairs.USER_ID, true)), session.accounts.value)
+            assertEquals(12, session.accounts.value.size)
+            assertTrue(session.accounts.value.all { it.isDemo })
+            assertEquals(MockAcademicAffairs.USER_ID, session.accounts.value.single { it.isActive }.userId)
+            session.accounts.value.forEach { account ->
+                assertFailsWith<IllegalStateException> { session.deleteAccount(account.userId) }
+            }
+            val otherDemo = session.accounts.value.last().userId
+            session.switchAccount(otherDemo)
+            runCurrent()
+            assertEquals(otherDemo, session.userId.value)
+            assertEquals(otherDemo, session.accounts.value.first().userId)
+            assertTrue(session.accounts.value.first().isActive)
+            assertEquals(0, real.calls)
             assertFailsWith<IllegalStateException> { session.deleteAccount("real-user") }
             assertFailsWith<IllegalStateException> { session.switchAccount("real-user") }
             assertEquals(user, db.userDao().user("real-user"))
@@ -193,6 +205,7 @@ class DemoModeIntegrationTest {
             session.logout()
             runCurrent()
             assertFalse(mode.isEnabled())
+            assertFailsWith<IllegalStateException> { session.deleteAccount(otherDemo) }
             assertEquals(0, real.calls)
             assertEquals("real-user", session.userId.value)
             assertEquals(real.accounts.value, session.accounts.value)
@@ -210,6 +223,7 @@ private suspend fun withDatabase(block: suspend (AppDatabase) -> Unit) {
 }
 
 private class RecordingSessionManager : SessionManager {
+    override suspend fun signIn(request: com.chow.pomegranate.session.LoginRequest) { calls++ }
     var calls = 0
     override val userId = MutableStateFlow<String?>("real-user")
     override val state = MutableStateFlow<SessionState>(SessionState.Active)

@@ -83,7 +83,11 @@ object CetExamParser {
                 date = cet6SpeakingDate,
                 languages = cet6SpeakingLanguages,
             ),
-            note = divs[1].text(),
+            note = divs[1].clone().apply {
+                // wholeText 保留 br；补齐标题、段落和列表项之间的块级换行。
+                select("h1, h2, h3, h4, h5, h6, p, li").forEach { it.after("\n\n") }
+            }.wholeText().lines().joinToString("\n") { it.trim() }
+                .replace(Regex("\n{3,}"), "\n\n").trim(),
             pdfUrlString = "${requestUrl.protocol.name}://${requestUrl.host}/project/CET/News/TestDataPlan-CET.pdf",
         )
     }

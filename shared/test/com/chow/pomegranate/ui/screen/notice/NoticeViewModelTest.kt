@@ -397,14 +397,71 @@ class NoticeViewModelTest {
         assertEquals(2, state.notices.size)
     }
 
+    @Test
+    fun scrollingCannotReopenAnExhaustedDateFilterAndAllCanResume() = runTest {
+        val yesterday = currentLocalDate().minus(1, DateTimeUnit.DAY).toString()
+        val repository = FakeNoticeRepository(mapOf(
+            1 to Result.success(page(1, listOf(notice("昨天", yesterday)), 50)),
+            2 to Result.success(page(2, listOf(notice("历史", yesterday)), 50)),
+        ))
+        val viewModel = NoticeViewModel(repository)
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.updateFilter(NoticeFilter.Today)
+        repeat(3) { viewModel.loadMore(); dispatcher.scheduler.advanceUntilIdle() }
+        assertEquals(listOf(1), repository.requestedPages)
+        assertTrue(viewModel.uiState.value.isSearchExhausted)
+        assertFalse(viewModel.uiState.value.canLoadMoreResults)
+        viewModel.updateFilter(NoticeFilter.All)
+        viewModel.loadMore()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf(1, 2), repository.requestedPages)
+    }
+
+    @Test
+    fun oldNextPageEndsSearchEvenWhenFirstPageContainsToday() = runTest {
+        val today = currentLocalDate()
+        val repository = FakeNoticeRepository(mapOf(
+            1 to Result.success(page(1, listOf(notice("今天的通知", today.toString())), 50)),
+            2 to Result.success(page(2, listOf(notice("昨天的通知", today.minus(1, DateTimeUnit.DAY).toString())), 50)),
+        ))
+        val viewModel = NoticeViewModel(repository)
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.updateFilter(NoticeFilter.Today)
+        viewModel.updateQuery("不存在的标题")
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadMore()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf(1, 2), repository.requestedPages)
+        assertTrue(viewModel.uiState.value.isSearchExhausted)
+        assertFalse(viewModel.uiState.value.isSearchLoading)
+    }
+
+    @Test
+    fun refreshRetainsVisibleNoticesUntilTheNewFirstPageArrives() = runTest {
+        val repository = FakeNoticeRepository(mapOf(1 to Result.success(page(1, listOf(notice("原有通知")), 5))))
+        val viewModel = NoticeViewModel(repository)
+        dispatcher.scheduler.advanceUntilIdle()
+        repository.delayMillis = 1_000
+        repository.pages[1] = Result.success(page(1, listOf(notice("最新通知")), 5))
+        viewModel.refresh()
+        dispatcher.scheduler.runCurrent()
+        assertTrue(viewModel.uiState.value.isInitialLoading)
+        assertEquals(listOf("原有通知"), viewModel.uiState.value.notices.map { it.title })
+        dispatcher.scheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isInitialLoading)
+        assertEquals(listOf("最新通知"), viewModel.uiState.value.notices.map { it.title })
+    }
+
     private class FakeNoticeRepository(
         pages: Map<Int, Result<NoticePage>>,
     ) : NoticeRepository(NoOpAcademicNotice) {
         val pages = pages.toMutableMap()
         val requestedPages = mutableListOf<Int>()
+        var delayMillis = 0L
 
         override suspend fun getNotices(pageIndex: Int): NoticePage {
             requestedPages += pageIndex
+            kotlinx.coroutines.delay(delayMillis)
             return requireNotNull(pages[pageIndex]) { "未准备第 $pageIndex 页" }.getOrThrow()
         }
     }

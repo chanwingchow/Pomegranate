@@ -25,6 +25,22 @@ sealed interface SessionState {
 data class Account(
     val userId: String,
     val isActive: Boolean,
+    val target: LoginTarget = LoginTarget.Both,
+    val isDemo: Boolean = false,
+)
+
+enum class LoginTarget(val academic: Boolean, val secondClassroom: Boolean) {
+    Both(true, true), Academic(true, false), SecondClassroom(false, true),
+}
+
+/** 仅用于本次登录；密码不写入导航或页面保存状态。 */
+data class LoginRequest(
+    val userId: String,
+    val password: String = "",
+    val secondClassroomPassword: String = "",
+    val captcha: String = "",
+    val target: LoginTarget = LoginTarget.Both,
+    val saveAccount: Boolean = true,
 )
 
 /**
@@ -42,6 +58,10 @@ interface SessionManager {
 
     /** 当前登录状态。 */
     val state: StateFlow<SessionState>
+
+    /** 与教务登录状态独立，第二课堂登录不会授予教务接口访问权限。 */
+    val secondClassroomState: StateFlow<SessionState>
+        get() = state
 
     /** 全部已保存账号，当前账号优先。 */
     val accounts: StateFlow<List<Account>>
@@ -63,6 +83,11 @@ interface SessionManager {
         secondClassroomPassword: String,
         captcha: String = "",
     )
+
+    suspend fun signIn(request: LoginRequest)
+
+    suspend fun awaitSecondClassroomLogin(): Boolean? =
+        if (secondClassroomState.value == SessionState.Active) false else null
 
     /** 使用当前账号的本地凭据自动登录；没有本地账号时不做任何事。 */
     suspend fun autoLogin()

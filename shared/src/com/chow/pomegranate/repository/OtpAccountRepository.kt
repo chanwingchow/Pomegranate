@@ -24,6 +24,10 @@ class OtpAccountRepository(database: AppDatabase) {
         return dao.save(normalized)
     }
 
+    /** 只删除确认过的 ID；空选择不执行写入。 */
+    suspend fun deleteAccounts(ids: List<Long>): Int =
+        if (ids.isEmpty()) 0 else dao.deleteAccounts(ids.distinct())
+
     /** 删除账户。 */
     suspend fun delete(account: OtpAccountEntity) = dao.delete(account)
 }

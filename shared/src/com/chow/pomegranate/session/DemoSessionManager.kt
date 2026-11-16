@@ -5,6 +5,7 @@ import com.chow.pomegranate.service.academic.affairs.demo.MockAcademicAffairs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -16,9 +17,14 @@ class DemoSessionManager(
     private val mode: DemoModeRepository,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : SessionManager {
-    override val userId = combine(mode.enabled, real.userId) { enabled, userId ->
+    private val demoUserId = MutableStateFlow(MockAcademicAffairs.USER_ID)
+    private val demoAccounts = List(12) { index ->
+        Account(if (index == 0) MockAcademicAffairs.USER_ID else "demo-${index.toString().padStart(2, '0')}",
+            false, LoginTarget.entries[index % LoginTarget.entries.size], isDemo = true)
+    }
+    override val userId = combine(mode.enabled, real.userId, demoUserId) { enabled, userId, demoId ->
         when (enabled) {
-            true -> MockAcademicAffairs.USER_ID
+            true -> demoId
             false -> userId
             null -> null
         }
@@ -32,9 +38,21 @@ class DemoSessionManager(
         }
     }.stateIn(scope, SharingStarted.Eagerly, SessionState.Inactive)
 
-    override val accounts = combine(mode.enabled, real.accounts) { enabled, accounts ->
-        if (enabled == true) listOf(Account(MockAcademicAffairs.USER_ID, true)) else accounts
+    override val accounts = combine(mode.enabled, real.accounts, demoUserId) { enabled, accounts, demoId ->
+        if (enabled == true) demoAccounts.map { it.copy(isActive = it.userId == demoId) }
+            .sortedByDescending { it.isActive } else accounts
     }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    override val secondClassroomState = combine(mode.enabled, real.secondClassroomState) { enabled, state ->
+        if (enabled == true) SessionState.Active else if (enabled == false) state else SessionState.Inactive
+    }.stateIn(scope, SharingStarted.Eagerly, SessionState.Inactive)
+
+    override suspend fun signIn(request: LoginRequest) {
+        if (!mode.isEnabled()) real.signIn(request)
+    }
+
+    override suspend fun awaitSecondClassroomLogin(): Boolean? =
+        if (mode.isEnabled()) false else real.awaitSecondClassroomLogin()
 
     override suspend fun getCaptcha(): ByteArray =
         if (mode.isEnabled()) demo.auth.getCaptcha() else real.getCaptcha()
@@ -49,12 +67,14 @@ class DemoSessionManager(
 
     override suspend fun switchAccount(userId: String) {
         if (mode.isEnabled()) {
-            check(userId == MockAcademicAffairs.USER_ID) { "请先关闭演示模式再切换真实账号。" }
+            check(demoAccounts.any { it.userId == userId }) { "请先关闭演示模式再切换真实账号。" }
+            demoUserId.value = userId
         } else real.switchAccount(userId)
     }
 
     override suspend fun deleteAccount(userId: String) {
-        check(!mode.isEnabled()) { "演示模式下不能删除账号，请先关闭演示模式。" }
+        check(demoAccounts.none { it.userId == userId }) { "演示账号不能删除。" }
+        check(!mode.isEnabled()) { "请先关闭演示模式再管理真实账号。" }
         real.deleteAccount(userId)
     }
 

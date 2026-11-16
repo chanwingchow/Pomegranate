@@ -1,7 +1,7 @@
 <resources>
     <string name="demo_mode">演示模式</string>
     <string name="demo_badge">演示</string>
-
+    <string name="exit_demo">退出演示</string>
     <string name="app_name">小石榴</string>
     <string name="app_poem">人生若只如初见，何事秋风悲画扇。</string>
 
@@ -43,8 +43,8 @@
     <string name="search_more">继续查找更多匹配结果</string>
     <string name="load_more_results">加载更多结果</string>
     <string name="pull_up_to_load_more">继续上拉加载更多</string>
-    <string name="notice_not_found">已加载全部 %1$d 页通知，没有匹配「%2$s」的结果</string>
-    <string name="notice_not_found_in_range">已加载全部 %1$d 页通知，该时间范围内没有结果</string>
+    <string name="notice_not_found">没有匹配「%1$s」的通知</string>
+    <string name="notice_not_found_in_range">该时间范围内没有通知</string>
     <string name="useful_websites">常用网站</string>
     <string name="link_copied">链接已复制。</string>
     <string name="exam_schedule">考试安排</string>
@@ -88,7 +88,7 @@
     <string name="week">周次</string>
     <string name="week_of">第 %1$d 周</string>
     <string name="tips">提示</string>
-    <string name="week_tooltip">周次影响课表展示，第 0 周表示开学前一周</string>
+    <string name="week_tooltip">设置本周周次，之后每周一自动递增。第 0 周表示开学前一周。</string>
     <string name="logo">应用图标</string>
     <string name="dev_by_chow">由 Chanwing Chow 开发</string>
 
@@ -133,6 +133,10 @@
     <string name="no_otp_accounts">暂无 OTP 账户，点击右下角按钮添加</string>
     <string name="otp_issuer">服务名称</string>
     <string name="otp_account">账户名称</string>
+    <string name="otp_code">动态验证码</string>
+    <string name="otp_copy_code">点击复制验证码</string>
+    <string name="otp_code_copied">验证码已复制</string>
+    <string name="otp_remaining_seconds">验证码将在 %1$d 秒后刷新</string>
     <string name="otp_secret">Base32 密钥</string>
     <string name="otp_import">从剪贴板导入</string>
     <string name="qr_scan">扫码添加</string>
@@ -148,6 +152,50 @@
     <string name="otp_digits">位数</string>
     <string name="otp_period">周期（秒）</string>
     <string name="confirm_delete_otp">确定删除“%1$s”吗？</string>
+
+    <string name="otp_selected_count">已选 %1$d 项</string>
+    <string name="otp_select_all">全选</string>
+    <string name="otp_deselect_all">取消全选</string>
+    <string name="otp_select_accounts">选择账户</string>
+    <string name="otp_more_actions">更多操作</string>
+    <string name="otp_account_actions">%1$s 的操作</string>
+    <string name="otp_delete_selected">删除所选</string>
+    <string name="otp_delete_all">删除全部</string>
+    <string name="otp_delete_title">删除账户？</string>
+    <string name="otp_delete_selected_title">删除所选账户？</string>
+    <string name="otp_delete_all_title">删除全部账户？</string>
+    <string name="otp_confirm_delete_selected">将删除以下 %1$d 个 OTP 账户：</string>
+    <string name="otp_confirm_delete_all">将删除全部 %1$d 个 OTP 账户：</string>
+    <string name="otp_more_accounts">另 %1$d 个账户</string>
+    <string name="otp_delete_irreversible">删除后无法恢复，请确保已备份密钥。</string>
+    <string name="otp_deleted_count">已删除 %1$d 个账户。</string>
+    <string name="otp_delete_failed">删除失败，请重试。</string>
+    <string name="otp_deleting">删除中…</string>
+    <string name="otp_add_account">添加 OTP 账户</string>
+    <string name="otp_edit_account">编辑 OTP 账户</string>
+    <string name="otp_editor_hint">扫码或导入链接，也可以手动填写。</string>
+    <string name="otp_manual_entry">账户信息</string>
+    <string name="otp_scan">扫码</string>
+    <string name="otp_paste">粘贴链接</string>
+    <string name="otp_required">此项不能为空</string>
+    <string name="otp_digits_invalid">位数须为 6 至 8</string>
+    <string name="otp_period_invalid">周期须为正整数</string>
+    <string name="otp_saving">保存中…</string>
+    <string name="otp_save_failed">保存失败，请重试。</string>
+    <string name="otp_loading">加载中…</string>
+    <string name="otp_account_missing">找不到该 OTP 账户。</string>
+    <string name="otp_secret_hint">填写服务提供的 Base32 密钥</string>
+    <string name="otp_defaults">%1$s 位 · %2$s 秒</string>
+    <string name="modules_tools">校园工具</string>
+    <string name="modules_academic">教务服务</string>
+
+    <string name="contact_dial">打开%1$s的拨号界面</string>
+    <string name="contact_dial_failed">无法打开拨号界面。</string>
+    <string name="contact_hours">工作时间 %1$s</string>
+    <string name="website_copy">复制%1$s的链接</string>
+    <string name="website_open">在浏览器打开%1$s</string>
+    <string name="websites_campus_services">校园服务</string>
+    <string name="websites_learning">学习与教务</string>
 
     <!-- 紧急电话页 -->
     <string name="outpatient_department">门诊部急救</string>
@@ -264,4 +312,6 @@
     <string name="course_score_search_hint">课程名、课程编号、学期或成绩</string>
     <string name="level_score_search">搜索等级考试</string>
     <string name="level_score_search_hint">考试名称、日期或成绩</string>
+    <string name="clipboard_copy_failed">复制失败，请重试。</string>
+    <string name="clipboard_read_failed">无法读取剪贴板，请重试。</string>
 </resources>

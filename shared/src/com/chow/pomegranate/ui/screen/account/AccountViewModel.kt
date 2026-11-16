@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chow.pomegranate.session.SessionManager
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.koin.core.annotation.KoinViewModel
 
 /**
- * 账号管理弹窗 ViewModel。
+ * 账号管理 ViewModel。
  *
  * 登出与切号必须放在这里，而不是弹窗的 `rememberCoroutineScope`：这两个动作的结果
  * 都是"关掉弹窗"，弹窗一离开组合，它的 scope 就被取消——服务端可能已经登出，
@@ -17,6 +19,10 @@ import org.koin.core.annotation.KoinViewModel
 class AccountViewModel(
     private val sessionManager: SessionManager,
 ) : ViewModel() {
+    val switchingUserId: StateFlow<String?>
+        field = MutableStateFlow<String?>(null)
+    val switchError: StateFlow<Throwable?>
+        field = MutableStateFlow<Throwable?>(null)
     /**
      * 退出登录。
      *
@@ -39,10 +45,15 @@ class AccountViewModel(
         userId: String,
         onResult: (Throwable?) -> Unit = {},
     ) {
+        if (switchingUserId.value != null) return
+        switchingUserId.value = userId
+        switchError.value = null
         viewModelScope.launch {
-            val failure = runCatching { sessionManager.switchAccount(userId) }.exceptionOrNull()
-
-            onResult(failure)
+            try {
+                val failure = runCatching { sessionManager.switchAccount(userId) }.exceptionOrNull()
+                switchError.value = failure
+                onResult(failure)
+            } finally { switchingUserId.value = null }
         }
     }
 

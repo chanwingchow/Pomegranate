@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.chow.pomegranate.repository.CetExamRepository
 import com.chow.pomegranate.service.cet.model.CetExam
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
+import com.chow.pomegranate.utils.runSuspendCatching
 
 /**
  * CET UI 状态。
@@ -87,6 +89,10 @@ class CetViewModel(
     val uiState: StateFlow<CetUiState>
         field = MutableStateFlow<CetUiState>(CetUiState.Loading)
 
+    val isRefreshing: StateFlow<Boolean>
+        field = MutableStateFlow(false)
+    private var pdfRequest: Job? = null
+
     init {
         getCetExam()
     }
@@ -95,16 +101,18 @@ class CetViewModel(
      * 获取 [CetExam]。
      */
     fun getCetExam() {
-        viewModelScope.launch(
-            CoroutineExceptionHandler { _, throwable ->
-                // 加载失败
-                uiState.value = CetUiState.Error(throwable)
-            },
-        ) {
-            val cetExam = cetExamRepository.getCetExam()
-
-            // 加载成功
-            uiState.value = CetUiState.Success(cetExam)
+        if (isRefreshing.value) return
+        isRefreshing.value = true
+        pdfRequest?.cancel()
+        viewModelScope.launch {
+            try {
+                uiState.value = runSuspendCatching { cetExamRepository.getCetExam() }.fold(
+                    onSuccess = CetUiState::Success,
+                    onFailure = CetUiState::Error,
+                )
+            } finally {
+                isRefreshing.value = false
+            }
         }
     }
 
@@ -123,7 +131,7 @@ class CetViewModel(
             return
         }
 
-        viewModelScope.launch(
+        pdfRequest = viewModelScope.launch(
             CoroutineExceptionHandler { _, throwable ->
                 // 加载失败
                 val current = uiState.value as? CetUiState.Success

@@ -1,7 +1,6 @@
 package com.chow.pomegranate.ui.component
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,11 +18,11 @@ fun DemoModeBadge(modifier: Modifier = Modifier) {
         modifier = modifier,
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        shape = RoundedCornerShape(4.dp),
+        shape = MaterialTheme.shapes.extraSmall,
     ) {
         Text(
             stringResource(Res.string.demo_badge),
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 0.dp),
             style = MaterialTheme.typography.labelSmall,
         )
     }

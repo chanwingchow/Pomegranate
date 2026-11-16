@@ -5,9 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.chow.pomegranate.data.local.PreferenceKeys
 import com.chow.pomegranate.repository.AppPreferenceRepository
 import com.chow.pomegranate.repository.DemoModeRepository
+import com.chow.pomegranate.repository.AcademicWeekRepository
+import com.chow.pomegranate.repository.currentLocalDate
 import com.chow.pomegranate.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
@@ -16,6 +21,7 @@ import org.koin.core.annotation.KoinViewModel
 class SettingsViewModel(
     private val repository: AppPreferenceRepository,
     private val demoModeRepository: DemoModeRepository,
+    private val academicWeeks: AcademicWeekRepository,
 ) : ViewModel() {
     val demoMode = demoModeRepository.enabled
 
@@ -36,17 +42,18 @@ class SettingsViewModel(
     }
 
     /** 主题模式。 */
-    val themeMode: MutableStateFlow<ThemeMode>
+    val themeMode: StateFlow<ThemeMode>
         field = MutableStateFlow(ThemeMode.Auto)
 
     /** 周次。 */
-    val week: MutableStateFlow<Int>
-        field = MutableStateFlow(0)
+    private val date = MutableStateFlow(currentLocalDate())
+    val week: StateFlow<Int> = academicWeeks.observe(date).stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    fun updateDate(value: LocalDate) { date.value = value }
 
     init {
         viewModelScope.launch {
             themeMode.value = readThemeMode()
-            week.value = repository.get(PreferenceKeys.WEEK)?.toIntOrNull() ?: 0
         }
     }
 
@@ -61,10 +68,8 @@ class SettingsViewModel(
 
     /** 保存周次。 */
     fun setWeek(value: Int) {
-        week.value = value
-
         viewModelScope.launch {
-            repository.set(PreferenceKeys.WEEK, value.toString())
+            academicWeeks.set(value, date.value)
         }
     }
 

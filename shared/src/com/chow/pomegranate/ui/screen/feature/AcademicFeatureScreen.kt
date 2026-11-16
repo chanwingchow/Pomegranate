@@ -1,530 +1,254 @@
 package com.chow.pomegranate.ui.screen.feature
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.rounded.School
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.result.ResultEffect
+import androidx.compose.ui.text.style.TextOverflow
+import com.chow.pomegranate.repository.toStudyCatalog
 import androidx.navigation3.scene.DialogSceneStrategy
 import com.chow.pomegranate.repository.AcademicFeature
-import com.chow.pomegranate.repository.AcademicFeatureItem
-import com.chow.pomegranate.repository.FeatureDataModel
-import com.chow.pomegranate.Res
-import com.chow.pomegranate.academic_search_hint
-import com.chow.pomegranate.teacher_search_hint
-import com.chow.pomegranate.keyword
-import com.chow.pomegranate.teachers
-import com.chow.pomegranate.extracurricular
-import com.chow.pomegranate.course_timetable
-import com.chow.pomegranate.academic_progress
-import com.chow.pomegranate.academic_plan
-import androidx.compose.material3.FilledTonalButton
-import com.chow.pomegranate.ui.component.PomLoadingIndicator
-import com.chow.pomegranate.ui.component.InlineLoadingIndicatorSize
-import com.chow.pomegranate.load_more_results
-import kotlinx.coroutines.delay
-import com.chow.pomegranate.academic_data
-import com.chow.pomegranate.academic_record_count
-import com.chow.pomegranate.load_failed
-import com.chow.pomegranate.no_academic_data
-import com.chow.pomegranate.refresh
-import com.chow.pomegranate.view_details
-import com.chow.pomegranate.ui.component.BackIconButton
-import com.chow.pomegranate.ui.component.ErrorContent
-import com.chow.pomegranate.ui.component.LocalSnackbarHostState
-import com.chow.pomegranate.ui.component.LoadingContent
-import com.chow.pomegranate.ui.component.PomTopAppBar
+import com.chow.pomegranate.ui.component.*
 import com.chow.pomegranate.ui.navigation.LocalBackStack
-import com.chow.pomegranate.ui.navigation.popDestination
-import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import com.chow.pomegranate.ui.navigation.DialogListDetailSceneStrategy
+import com.chow.pomegranate.ui.navigation.FullWidthOverviewSceneStrategy
+import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
+import com.chow.pomegranate.ui.screen.login.LoginRoute
+import com.chow.pomegranate.ui.screen.login.SecondClassLoginRoute
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
-import org.jetbrains.compose.resources.stringResource
-import com.chow.pomegranate.ui.component.NotLoggedInContent
-import com.chow.pomegranate.ui.screen.login.LoginRoute
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
 
-/** 选课系统页路由。 */
-@Serializable
-data object CourseSelectionRoute : NavKey
+@Serializable data object CourseSelectionRoute : NavKey
+@Serializable data object ExtracurricularRoute : NavKey
+@Serializable data object TeachersRoute : NavKey
+@Serializable data class TeacherSearchRoute(val query: String) : NavKey
+@Serializable data object CourseTimetableRoute : NavKey
+@Serializable data object AcademicPlanRoute : NavKey
+@Serializable data object AcademicProgressRoute : NavKey
+@Serializable data class FeatureDetailRoute(val title: String, val details: Map<String, String>) : NavKey
 
-/** 第二课堂页路由。 */
-@Serializable
-data object ExtracurricularRoute : NavKey
-
-/** 教师信息页路由。 */
-@Serializable
-data object TeachersRoute : NavKey
-
-/** 全校课表页路由。 */
-@Serializable
-data object CourseTimetableRoute : NavKey
-
-/** 执行计划页路由。 */
-@Serializable
-data object AcademicPlanRoute : NavKey
-
-/** 学业进度页路由。 */
-@Serializable
-data object AcademicProgressRoute : NavKey
-
-/** 功能详情弹窗路由。 */
-@Serializable
-data class FeatureDetailRoute(
-    val title: String,
-    val details: Map<String, String>,
-) : NavKey
-
-/**
- * 注册学业功能导航入口。
- */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 fun EntryProviderScope<NavKey>.academicFeatureEntries() {
-    entry<CourseSelectionRoute> {
-        CourseSelectionScreen()
-    }
-    entry<CourseOperationRoute>(metadata = DialogSceneStrategy.dialog()) { route ->
-        CourseOperationDialog(route)
-    }
-    entry<ExtracurricularRoute> {
-        AcademicFeatureScreen(
-            stringResource(Res.string.extracurricular),
-            AcademicFeature.Extracurricular,
-        )
-    }
-    entry<TeachersRoute> {
-        AcademicFeatureScreen(
-            stringResource(Res.string.teachers),
-            AcademicFeature.Teachers,
-        )
-    }
-    entry<CourseTimetableRoute> {
-        AcademicFeatureScreen(
-            stringResource(Res.string.course_timetable),
-            AcademicFeature.CourseTimetable,
-        )
-    }
-    entry<AcademicPlanRoute> {
-        AcademicFeatureScreen(
-            stringResource(Res.string.academic_plan),
-            AcademicFeature.AcademicPlan,
-        )
-    }
-    entry<AcademicProgressRoute> {
-        AcademicFeatureScreen(
-            stringResource(Res.string.academic_progress),
-            AcademicFeature.AcademicProgress,
-        )
-    }
-    entry<FeatureDetailRoute>(
-        metadata = DialogSceneStrategy.dialog(),
-    ) { route ->
-        val backStack = LocalBackStack.current
-        FeatureDetailDialog(
-            route = route,
-            onDismiss = { backStack.popDestination() },
-        )
+    val listMetadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { StudyDetailPlaceholder() })
+    entry<CourseSelectionRoute>(metadata = listMetadata + FullWidthOverviewSceneStrategy.metadata()) { CourseSelectionScreen() }
+    entry<CourseOperationRoute>(metadata = DialogSceneStrategy.dialog()) { CourseOperationDialog(it) }
+    entry<SchoolTimetableFiltersRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { SchoolTimetableFiltersSheet(it) }
+    entry<SchoolSemesterRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { SchoolSemesterSheet(it) }
+    entry<SchoolTimetableDataRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { SchoolTimetableDataSheet() }
+    entry<SchoolTimetableDeleteRoute>(metadata = DialogSceneStrategy.dialog()) { SchoolTimetableDeleteDialog(it) }
+    entry<CourseBasketRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { CourseBasketSheet(it) }
+    entry<CourseFiltersRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { CourseFiltersSheet(it) }
+    entry<CourseInstructionsRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { CourseInstructionsSheet(it) }
+    entry<ExtracurricularRoute>(metadata = listMetadata) { StudyCatalogScreen("第二课堂", AcademicFeature.Extracurricular) }
+    entry<TeacherSearchRoute>(metadata = listMetadata) { StudyCatalogScreen("教师信息", AcademicFeature.Teachers, initialQuery = it.query) }
+    entry<TeachersRoute>(metadata = listMetadata) { StudyCatalogScreen("教师信息", AcademicFeature.Teachers) }
+    entry<CourseTimetableRoute>(metadata = listMetadata) { StudyCatalogScreen("全校课表", AcademicFeature.CourseTimetable) }
+    entry<AcademicPlanRoute>(metadata = listMetadata) { StudyCatalogScreen("执行计划", AcademicFeature.AcademicPlan) }
+    entry<AcademicProgressRoute>(metadata = listMetadata) { StudyCatalogScreen("学业进度", AcademicFeature.AcademicProgress) }
+    entry<AdaptiveStudyDetailRoute>(metadata = ListDetailSceneStrategy.detailPane() + DialogListDetailSceneStrategy.metadata()) { AdaptiveStudyDetailScreen(it) }
+    entry<StudyDetailRoute>(metadata = ListDetailSceneStrategy.detailPane()) { StudyDetailScreen(it) }
+    entry<FeatureDetailRoute>(metadata = ListDetailSceneStrategy.detailPane()) {
+        StudyDetailScreen(StudyDetailRoute("legacy:${it.title}", it.title,
+            sections = listOf(StudySection("详情", it.details.map { (label, value) -> StudyField(label, value) }))))
     }
 }
 
-/** 学业功能页。 */
 @Composable
-private fun AcademicFeatureScreen(
-    title: String,
-    feature: AcademicFeature,
-    modifier: Modifier = Modifier,
-    viewModel: AcademicFeatureViewModel = koinViewModel(),
-) {
+private fun StudyCatalogScreen(title: String, feature: AcademicFeature, viewModel: StudyCatalogViewModel = koinViewModel(), initialQuery: String = "") {
     val backStack = LocalBackStack.current
-    val snackbarHostState = LocalSnackbarHostState.current
-    val uiState by viewModel.uiState.collectAsState()
-    val loadFailedMessage = stringResource(Res.string.load_failed)
-
-    LaunchedEffect(feature) {
-        viewModel.load(feature)
+    val state by viewModel.state.collectAsState()
+    val tabStates by viewModel.tabStates.collectAsState()
+    val schoolFilters by viewModel.schoolTimetableFilters.collectAsState()
+    var query by rememberSaveable { mutableStateOf(if (feature == AcademicFeature.CourseTimetable) state.query else initialQuery) }
+    var initialTermSelected by rememberSaveable { mutableStateOf(false) }
+    val remoteSearch = feature == AcademicFeature.Teachers
+    LaunchedEffect(feature) { viewModel.ensureLoaded(feature, initialQuery) }
+    LaunchedEffect(query) {
+        if (remoteSearch) {
+            delay(400)
+            if (query.trim() != viewModel.state.value.query) viewModel.load(feature, query = query.trim())
+        }
     }
-
-    LaunchedEffect(uiState) {
-        val error = uiState as? AcademicFeatureUiState.Error ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(
-            message = error.throwable.message ?: loadFailedMessage,
-        )
+    val classroomRules = LocalClassroomReplacements.current
+    val courseNames = LocalCourseNameReplacements.current
+    val schoolCatalog = remember(state.catalog, query, schoolFilters, classroomRules, courseNames) {
+        state.catalog?.schoolTimetable?.let { source -> source.toStudyCatalog(source.courses.filterSchoolTimetable(query, schoolFilters, classroomRules, courseNames)) }
     }
-
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            PomTopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    BackIconButton(onClick = { backStack.removeLastOrNull() })
-                },
+    val groups = (schoolCatalog ?: state.catalog)?.groups.orEmpty()
+    val labels = if (feature == AcademicFeature.Extracurricular) listOf("成绩", "活动", "记录") else groups.map { it.title }
+    val pager = rememberPagerState { labels.size.coerceAtLeast(1) }
+    val scope = rememberCoroutineScope()
+    // Map 仅供回顶按钮引用当前页面；实际位置交给各页的 rememberLazyGridState 保存。
+    val gridStates = remember { mutableStateMapOf<Int, LazyGridState>() }
+    val gridState = gridStates[pager.currentPage]
+    if (feature == AcademicFeature.CourseTimetable) ResultEffect<SchoolTimetableFilterResult> { result ->
+        if (schoolFilters != result.filters) {
+            viewModel.setSchoolTimetableFilters(result.filters)
+            gridStates[0]?.requestScrollToItem(0)
+        }
+    }
+    if (feature == AcademicFeature.CourseTimetable) ResultEffect<SchoolSemesterSelection> { result ->
+        if (result.semester != state.semester.toString()) {
+            if (backStack.lastOrNull().studyDetailRoute()?.id?.startsWith("timetable:") == true) backStack.removeLastOrNull()
+            gridStates[0]?.requestScrollToItem(0)
+            viewModel.load(feature, semester = com.chow.pomegranate.service.foundation.Semester.parse(result.semester))
+        }
+    }
+    LaunchedEffect(pager.settledPage) {
+        if (feature == AcademicFeature.Extracurricular) viewModel.selectTab(pager.settledPage)
+    }
+    LaunchedEffect(gridState, remoteSearch, state.catalog, state.loading, state.refreshing, state.loadingMore, state.error) {
+        if (gridState == null || !remoteSearch || state.loading || state.refreshing || state.loadingMore || state.error != null || state.catalog?.hasMore != true) return@LaunchedEffect
+        snapshotFlow { gridState.layoutInfo.let { (it.visibleItemsInfo.lastOrNull()?.index ?: -1) to it.totalItemsCount } }
+            .collect { (last, total) -> if (total > 0 && last >= total - 5) viewModel.loadMore() }
+    }
+    LaunchedEffect(groups.map { it.title }) {
+        if (feature == AcademicFeature.AcademicPlan && !initialTermSelected && groups.isNotEmpty()) {
+            pager.scrollToPage(groups.indexOfFirst { it.title == state.semester.toString() }.coerceAtLeast(0))
+            initialTermSelected = true
+        }
+    }
+    val icon = when (feature) {
+        AcademicFeature.Teachers -> Icons.Rounded.Badge
+        AcademicFeature.CourseTimetable -> Icons.Rounded.CalendarMonth
+        AcademicFeature.AcademicPlan -> Icons.Rounded.RocketLaunch
+        AcademicFeature.AcademicProgress -> Icons.AutoMirrored.Rounded.TrendingUp
+        else -> Icons.Rounded.Groups
+    }
+    Scaffold(topBar = {
+        StudyTopBar {
+            PomTopAppBar(title = { Text(title) }, shadowElevation = 0.dp, navigationIcon = { BackIconButton(onClick = { backStack.removeLastOrNull() }) },
                 actions = {
-                    FilledTonalIconButton(onClick = { viewModel.load(feature, force = true) }) {
-                        Icon(
-                            Icons.Rounded.Refresh,
-                            contentDescription = stringResource(Res.string.refresh),
-                        )
+                    if (feature == AcademicFeature.CourseTimetable) {
+                        IconButton(onClick = { backStack.add(SchoolSemesterRoute(state.semester.toString())) }) { Icon(Icons.Rounded.CalendarMonth, "切换学期") }
+                        IconButton(onClick = { backStack.add(SchoolTimetableDataRoute) }) { Icon(Icons.Rounded.Storage, "管理本地课表") }
                     }
-                },
-            )
-        },
-    ) { innerPadding ->
-        val contentPadding = innerPadding + PaddingValues(16.dp)
-
-        when (val state = uiState) {
-            AcademicFeatureUiState.Idle,
-            AcademicFeatureUiState.Loading,
-                -> LoadingContent(contentPadding = contentPadding)
-            AcademicFeatureUiState.NotLoggedIn -> NotLoggedInContent(
-                onLogin = { backStack.add(LoginRoute) },
-                contentPadding = contentPadding,
-            )
-
-
-            is AcademicFeatureUiState.Error -> ErrorContent(
-                throwable = state.throwable,
-                contentPadding = contentPadding,
-            )
-
-            is AcademicFeatureUiState.Success -> FeatureItems(
-                items = state.items,
-                keyword = state.keyword,
-                onSubmitKeyword = viewModel::submitKeyword,
-                searchable = state.feature.isSearchable,
-                // 服务端搜索：输入即查，带防抖；本地过滤的功能只更新草稿
-                serverSearch = state.feature.dataModel == FeatureDataModel.Paged,
-                query = state.query,
-                isSearching = state.isLoadingPage,
-                hasMorePages = state.hasMorePages,
-                onQueryChange = viewModel::search,
-                onLoadMore = viewModel::loadMore,
-                onItemClick = { item ->
-                    backStack.add(
-                        FeatureDetailRoute(
-                            title = item.title,
-                            details = item.details.toMap(),
-                        ),
-                    )
-                },
-                contentPadding = contentPadding,
-            )
+                    IconButton(onClick = viewModel::refresh) { Icon(Icons.Rounded.Refresh, "刷新") }
+                })
+            if (labels.size > 1) {
+                StudyTabs(labels, pager.currentPage, scrollable = feature == AcademicFeature.AcademicPlan) { i ->
+                    scope.launch { pager.animateScrollToPage(i) }
+                }
+            }
         }
-    }
-}
-
-/** 学业功能列表。 */
-@Composable
-private fun FeatureItems(
-    items: List<AcademicFeatureItem>,
-    keyword: String,
-    onSubmitKeyword: (String) -> Unit,
-    searchable: Boolean,
-    serverSearch: Boolean,
-    query: String,
-    isSearching: Boolean,
-    hasMorePages: Boolean,
-    onQueryChange: (String) -> Unit,
-    onLoadMore: () -> Unit,
-    onItemClick: (AcademicFeatureItem) -> Unit,
-    contentPadding: PaddingValues,
-) {
-    // 本地过滤的功能：草稿由用户按搜索键提交
-    var draftQuery by androidx.compose.runtime.saveable.rememberSaveable(keyword) {
-        androidx.compose.runtime.mutableStateOf(keyword)
-    }
-    // 服务端搜索的功能：输入即查，防抖 400ms，避免每敲一个字打一次服务端
-    var typedQuery by androidx.compose.runtime.saveable.rememberSaveable(query) {
-        androidx.compose.runtime.mutableStateOf(query)
-    }
-
-    if (serverSearch) {
-        LaunchedEffect(typedQuery) {
-            if (typedQuery == query) return@LaunchedEffect
-            delay(SEARCH_DEBOUNCE_MILLIS)
-            onQueryChange(typedQuery)
-        }
-    }
-
-    // 服务端已经把关键词过滤过了，本地只对"一次返回全量"的功能再过滤
-    val visibleItems = if (serverSearch) items else items.filterByKeyword(keyword)
-
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(280.dp),
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            FeatureHeader(itemCount = items.size)
-        }
-
-        if (searchable) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                OutlinedTextField(
-                    value = if (serverSearch) typedQuery else draftQuery,
-                    onValueChange = { value ->
-                        if (serverSearch) {
-                            typedQuery = value
-                        } else {
-                            draftQuery = value
+    }, floatingActionButton = { gridState?.let { BackToTopButton(it) } }) { padding ->
+        PomPullToRefreshBox(state.refreshing, viewModel::refresh, contentPadding = padding, enabled = state.catalog != null) {
+            Column(Modifier.fillMaxSize().padding(padding.withoutBottom())) {
+                if (feature != AcademicFeature.AcademicProgress && feature != AcademicFeature.Extracurricular) {
+                    StudySearch(query, {
+                        query = it
+                        if (feature == AcademicFeature.CourseTimetable) {
+                            viewModel.setLocalQuery(it)
+                            gridStates[0]?.requestScrollToItem(0)
                         }
+                    }, when (feature) {
+                        AcademicFeature.Teachers -> "搜索教师姓名"
+                        AcademicFeature.AcademicPlan -> "搜索课程、编号或开课单位"
+                        else -> "搜索课程、教师或教室"
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(Res.string.keyword)) },
-                    placeholder = {
-                        Text(
-                            if (serverSearch) {
-                                stringResource(Res.string.teacher_search_hint)
-                            } else {
-                                stringResource(Res.string.academic_search_hint)
-                            },
-                        )
-                    },
-                    singleLine = true,
-                    trailingIcon = {
-                        if (serverSearch && isSearching) {
-                            PomLoadingIndicator(size = InlineLoadingIndicatorSize)
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            if (serverSearch) {
-                                onQueryChange(typedQuery)
-                            } else {
-                                onSubmitKeyword(draftQuery)
+                        Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = if (feature == AcademicFeature.CourseTimetable) 8.dp else 16.dp))
+                }
+                if (feature == AcademicFeature.CourseTimetable) state.catalog?.schoolTimetable?.let { source ->
+                    Surface(onClick = { backStack.add(SchoolTimetableFiltersRoute(schoolFilters, SchoolTimetableFilterOptions.from(source.courses))) },
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                        shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        Row(Modifier.padding(start = 16.dp, end = if (schoolFilters.isActive) 4.dp else 16.dp, top = 10.dp, bottom = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Icon(Icons.Rounded.Tune, "筛选全校课表")
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(if (schoolFilters.isActive) "已筛选课次" else "全部课次", style = MaterialTheme.typography.labelLarge)
+                                Text(schoolFilters.copy(classroom = classroomRules.format(schoolFilters.classroom)).summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
-                        },
-                    ),
-                )
-            }
-        }
-
-        if (visibleItems.isEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                EmptyFeatureContent(hasKeyword = keyword.isNotBlank() || query.isNotBlank())
-            }
-        }
-
-        items(
-            items = visibleItems,
-            key = AcademicFeatureItem::id,
-        ) { item ->
-            Card(
-                onClick = { onItemClick(item) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                ),
-            ) {
-                ListItem(
-                    headlineContent = { Text(item.title) },
-                    supportingContent = {
-                        if (item.supportingText.isNotBlank()) {
-                            Text(item.supportingText)
+                            if (schoolFilters.isActive) IconButton(onClick = {
+                                viewModel.setSchoolTimetableFilters(SchoolTimetableFilters())
+                                gridStates[0]?.requestScrollToItem(0)
+                                if ((backStack.lastOrNull() as? StudyDetailRoute)?.id?.startsWith("timetable:") == true) backStack.removeLastOrNull()
+                            }) { Icon(Icons.Rounded.Close, "清除课表筛选") }
+                            else Icon(Icons.Rounded.ExpandMore, null)
                         }
-                    },
-                    trailingContent = {
-                        FilledTonalIconButton(onClick = { onItemClick(item) }) {
-                            Icon(
-                                Icons.AutoMirrored.Rounded.ArrowForward,
-                                contentDescription = stringResource(Res.string.view_details),
-                            )
-                        }
-                    },
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    ),
-                )
-            }
-        }
-
-        // 服务端查询还有下一页时给一个入口，不自动预取（列表可能很长）
-        if (serverSearch && hasMorePages) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                FilledTonalButton(
-                    onClick = onLoadMore,
-                    enabled = !isSearching,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(Res.string.load_more_results))
+                    }
                 }
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun FeatureItemsPreview() {
-    PomegranateExpressiveTheme {
-        FeatureItems(
-            items = listOf(
-                AcademicFeatureItem(
-                    id = "CS101",
-                    title = "程序设计",
-                    supportingText = "陈老师 · 实验楼 201",
-                    details = listOf(
-                        "课程编号" to "CS101",
-                        "学分" to "3.0",
-                    ),
-                ),
-                AcademicFeatureItem(
-                    id = "CS102",
-                    title = "数据结构",
-                    supportingText = "林老师 · 第一教学楼 305",
-                    details = listOf(
-                        "课程编号" to "CS102",
-                        "学分" to "4.0",
-                    ),
-                ),
-            ),
-            keyword = "",
-            onSubmitKeyword = {},
-            searchable = true,
-            serverSearch = false,
-            query = "",
-            isSearching = false,
-            hasMorePages = false,
-            onQueryChange = {},
-            onLoadMore = {},
-            onItemClick = {},
-            contentPadding = PaddingValues(16.dp),
-        )
-    }
-}
-
-/** 功能页概览。 */
-@Composable
-private fun FeatureHeader(
-    itemCount: Int,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.primaryContainer,
-        tonalElevation = 2.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                Icons.Rounded.School,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                stringResource(Res.string.academic_data),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            Text(
-                stringResource(Res.string.academic_record_count, itemCount),
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
-
-/** 空数据内容。 */
-@Composable
-private fun EmptyFeatureContent(hasKeyword: Boolean = false) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
-        Text(
-            if (hasKeyword) "没有匹配的记录" else stringResource(Res.string.no_academic_data),
-            modifier = Modifier.padding(32.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}
-
-/** 功能详情弹窗。 */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FeatureDetailDialog(
-    route: FeatureDetailRoute,
-    onDismiss: () -> Unit,
-) {
-    // 详情项，过滤掉空值
-    val details = route.details.filterValues { it.isNotBlank() }.entries.toList()
-
-    // 内容放进 Material3 弹窗的槽位，容器由 AlertDialog 自己提供
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(route.title)
-        },
-        text = {
-            LazyColumn(
-                modifier = Modifier.heightIn(max = 480.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(details) { (label, value) ->
-                    Column {
-                        Text(
-                            label,
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Text(value)
+                HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.Top) { page ->
+                    val pageState = if (feature == AcademicFeature.Extracurricular) tabStates[page] ?: StudyCatalogState(tab = page) else state
+                    val pageGroups = (if (feature == AcademicFeature.CourseTimetable) schoolCatalog else pageState.catalog)?.groups.orEmpty()
+                    val pageGridState = rememberLazyGridState()
+                    DisposableEffect(page, pageGridState) {
+                        gridStates[page] = pageGridState
+                        onDispose { if (gridStates[page] === pageGridState) gridStates.remove(page) }
+                    }
+                    when {
+                        pageState.notLoggedIn -> NotLoggedInContent(onLogin = { backStack.add(if (feature == AcademicFeature.Extracurricular) SecondClassLoginRoute else LoginRoute) })
+                        pageState.loading -> LoadingContent()
+                        pageState.catalog == null && pageState.error != null -> Column(Modifier.fillMaxSize()) {
+                            ErrorContent(pageState.error, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { viewModel.load(feature, tab = page) }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("重试") }
+                        }
+                        else -> {
+                            val records = (if (feature == AcademicFeature.Extracurricular) pageGroups.firstOrNull() else pageGroups.getOrNull(page))?.records.orEmpty()
+                                .filter { record -> remoteSearch || feature == AcademicFeature.CourseTimetable || query.isBlank() || sequenceOf(record.title, record.subtitle, record.supporting)
+                                    .plus(record.detail.sections.flatMap { it.fields }.asSequence().flatMap { field ->
+                                        if (field.label in classroomFieldLabels) sequenceOf(field.value, classroomRules.format(field.value)) else sequenceOf(field.value)
+                                    }).any { it.contains(query.trim(), true) } ||
+                                    feature == AcademicFeature.AcademicPlan && courseNames.matches(record.title, query.trim()) }
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                                if (records.isEmpty() && pageState.error == null) EmptyContent(message = if (feature == AcademicFeature.CourseTimetable && (schoolFilters.isActive || query.isNotBlank())) "没有符合条件的课次" else if (query.isNotBlank()) "没有匹配的记录" else "暂无记录")
+                                else LazyVerticalGrid(columns = GridCells.Adaptive(300.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)),
+                                    modifier = Modifier.widthIn(max = 1100.dp).fillMaxSize(), state = pageGridState, contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = if (feature in listOf(AcademicFeature.AcademicProgress, AcademicFeature.Extracurricular)) 16.dp else 0.dp, bottom = 16.dp + padding.calculateBottomPadding()),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    itemsIndexed(records, key = { _, record -> record.id }) { index, record ->
+                                        val recordIcon = if (record.achievement != null) when {
+                                            "思想" in record.title || "道德" in record.title -> Icons.Rounded.Verified
+                                            "创新" in record.title -> Icons.Rounded.Lightbulb
+                                            "志愿" in record.title || "社会" in record.title -> Icons.Rounded.VolunteerActivism
+                                            "协作" in record.title || "交流" in record.title -> Icons.Rounded.Forum
+                                            "艺术" in record.title || "文化" in record.title -> Icons.Rounded.Palette
+                                            "健康" in record.title || "体育" in record.title -> Icons.Rounded.FitnessCenter
+                                            "职业" in record.title -> Icons.Rounded.Work
+                                            else -> icon
+                                        } else icon
+                                        StudyRecordCard(record, recordIcon, index,
+                                            interactive = feature != AcademicFeature.Extracurricular || page != 0) {
+                                            if (feature == AcademicFeature.AcademicPlan || feature == AcademicFeature.Extracurricular) backStack.openAdaptiveStudyDetail(record.detail)
+                                            else backStack.openStudyDetail(record.detail)
+                                        }
+                                    }
+                                    if (pageState.error != null) item(span = { GridItemSpan(maxLineSpan) }) {
+                                        TextButton(onClick = { if (pageState.catalog?.hasMore == true) viewModel.loadMore() else viewModel.refresh() }, modifier = Modifier.fillMaxWidth()) {
+                                            Text("加载失败，点击重试")
+                                        }
+                                    } else if (remoteSearch) item(span = { GridItemSpan(maxLineSpan) }) {
+                                        Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                            if (pageState.loadingMore) PomLoadingIndicator(size = InlineLoadingIndicatorSize)
+                                            else if (pageState.catalog?.hasMore == false && records.isNotEmpty()) Text("已显示全部 ${records.size} 位教师",
+                                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("关闭")
-            }
-        },
-    )
+        }
+    }
 }
-
-/** 服务端搜索的防抖时长，避免每敲一个字打一次服务端。 */
-private const val SEARCH_DEBOUNCE_MILLIS = 400L

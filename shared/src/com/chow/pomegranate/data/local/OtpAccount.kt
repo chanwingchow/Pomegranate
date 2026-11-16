@@ -35,6 +35,10 @@ interface OtpAccountDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun save(account: OtpAccountEntity): Long
 
+    /** 一次删除确认过的账户，返回实际删除数量。 */
+    @Query("DELETE FROM otp_accounts WHERE id IN (:ids)")
+    suspend fun deleteAccounts(ids: List<Long>): Int
+
     /** 删除账户。 */
     @Delete
     suspend fun delete(account: OtpAccountEntity)

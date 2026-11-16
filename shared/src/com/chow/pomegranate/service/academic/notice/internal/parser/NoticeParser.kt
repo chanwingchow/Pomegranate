@@ -27,14 +27,16 @@ internal object NoticeParser {
     ): Notice = withContext(Dispatchers.Default) {
         val document = Ksoup.parse(html, baseUri = lazyRequestUrl().toString())
 
-        val div = document.getElementById("d-container")!!
+        val div = document.getElementById("d-container") ?: error("未找到通知正文，请在浏览器中查看。")
 
         // 这里其实是一个 div，有一个 pdfsrc 属性包含 PDF 链接
         val iframe = div.selectFirst(Evaluator.Class("wp_pdf_player"))
 
         if (iframe == null) {
+            // 学校页面的外层还包含标题、发布时间、浏览次数和导航；阅读页已单独呈现标题与日期。
+            val content = div.selectFirst(".wp_articlecontent, .v_news_content") ?: div
             // 正文附件通常使用 /_upload/... 相对地址，交给系统前必须补全。
-            div.select("a[href]").forEach { link ->
+            content.select("a[href]").forEach { link ->
                 val absoluteUrl = link.absUrl("href")
                 if (absoluteUrl.isNotBlank()) link.attr("href", absoluteUrl)
             }
@@ -43,7 +45,7 @@ internal object NoticeParser {
                 title = notice.title,
                 date = notice.date,
                 urlString = notice.urlString,
-                html = div.html(),
+                html = content.html(),
             )
         } else {
             return@withContext Notice.Document(

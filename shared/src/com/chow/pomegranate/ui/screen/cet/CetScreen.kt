@@ -1,341 +1,105 @@
 package com.chow.pomegranate.ui.screen.cet
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.Edit
-import androidx.compose.material.icons.twotone.SettingsVoice
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.chow.pomegranate.Res
-import com.chow.pomegranate.afternoon
-import com.chow.pomegranate.cet
-import com.chow.pomegranate.details
-import com.chow.pomegranate.morning
-import com.chow.pomegranate.overview
-import com.chow.pomegranate.service.cet.model.CetExam
 import com.chow.pomegranate.service.cet.model.CetExamItem
-import com.chow.pomegranate.ui.component.BackIconButton
-import com.chow.pomegranate.ui.component.ErrorContent
-import com.chow.pomegranate.ui.component.LoadingContent
-import com.chow.pomegranate.ui.component.PomTopAppBar
+import com.chow.pomegranate.ui.component.*
 import com.chow.pomegranate.ui.navigation.LocalBackStack
-import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import com.conamobile.pdfkmp.viewer.PdfSource
 import com.conamobile.pdfkmp.viewer.PdfViewer
-import com.skydoves.cloudy.Sky
-import com.skydoves.cloudy.cloudy
-import com.skydoves.cloudy.rememberSky
-import com.skydoves.cloudy.sky
-import kotlinx.coroutines.launch
+import com.conamobile.pdfkmp.viewer.rememberPdfShareAction
 import kotlinx.datetime.format.AmPmMarker
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import org.jetbrains.compose.resources.StringResource
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-/**
- * CET 页导航入口。
- */
+@Serializable data object CetRoute : NavKey
+@Serializable internal data class CetNoteRoute(val note: String) : NavKey
 fun EntryProviderScope<NavKey>.cetEntry() {
-    entry<CetRoute> {
-        CetScreen()
-    }
+    entry<CetRoute> { CetScreen() }
+    entry<CetNoteRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { route -> CetNoteSheet(route.note) }
 }
 
-/**
- * CET 页路由。
- */
-@Serializable
-data object CetRoute : NavKey
-
-/**
- * CET 页。
- */
 @Composable
-private fun CetScreen(
-    modifier: Modifier = Modifier,
-) {
-    CetContent(
-        modifier = modifier,
-    )
-}
-
-@Preview
-@Composable
-private fun CetContentPreview() {
-    PomegranateExpressiveTheme {
-        CetContent()
-    }
-}
-
-/**
- * CET 页内容。
- */
-@Composable
-private fun CetContent(
-    modifier: Modifier = Modifier,
-    viewModel: CetViewModel = koinViewModel(),
-) {
+private fun CetScreen(viewModel: CetViewModel = koinViewModel()) {
+    val state by viewModel.uiState.collectAsState()
+    val refreshing by viewModel.isRefreshing.collectAsState()
     val backStack = LocalBackStack.current
-
-    // UI 状态
-    val uiState by viewModel.uiState.collectAsState()
-
-    val tabs = CetTab.entries
-
-    val pagerState = rememberPagerState { tabs.size }
-
-    // 高斯模糊
-    val sky = rememberSky()
-
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopBar(
-                tabs = tabs,
-                pagerState = pagerState,
-                isSuccessUiState = uiState is CetUiState.Success,
-                onBack = {
-                    backStack.removeLastOrNull()
-                },
-                modifier = Modifier.cloudy(sky = sky),
-            )
-        },
-    ) { innerPadding ->
-        val contentPadding = innerPadding + PaddingValues(16.dp)
-
-        when (uiState) {
-            is CetUiState.Loading -> {
-                // 加载中
-                LoadingContent(
-                    contentPadding = contentPadding,
-                )
-            }
-
-            is CetUiState.Error -> {
-                // 加载失败
-                ErrorContent(
-                    throwable = (uiState as CetUiState.Error).throwable,
-                    contentPadding = contentPadding,
-                )
-            }
-
-            is CetUiState.Success -> {
-                // 加载成功
-                CetExamContent(
-                    uiState = uiState as CetUiState.Success,
-                    onLoadPdfBytes = {
-                        viewModel.getCetExamPdf()
-                    },
-                    tabs = tabs,
-                    pagerState = pagerState,
-                    sky = sky,
-                    contentPadding = contentPadding,
-                )
-            }
-        }
-    }
-}
-
-/**
- * CET 页标签。
- *
- * @property label 标签字符串资源
- */
-private enum class CetTab(
-    val label: StringResource,
-) {
-    /**
-     * 概览。
-     */
-    Overview(
-        label = Res.string.overview,
-    ),
-
-    /**
-     * 详情。
-     */
-    Details(
-        label = Res.string.details,
-    );
-}
-
-/**
- * 顶部导航。
- */
-@Composable
-private fun TopBar(
-    tabs: List<CetTab>,
-    pagerState: PagerState,
-    isSuccessUiState: Boolean,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+    val pager = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
-
-    Surface(
-        shadowElevation = 1.dp,
-        color = MaterialTheme.colorScheme.surface.copy(0.8f),
-        modifier = modifier,
-    ) {
-        Column(
-            modifier = modifier,
-        ) {
-            PomTopAppBar(
-                title = {
-                    Text(
-                        stringResource(Res.string.cet),
-                    )
-                },
-                modifier = modifier,
-                navigationIcon = {
-                    // 返回按钮
-                    BackIconButton(
-                        onClick = onBack,
-                    )
-                },
-                shadowElevation = 0.dp,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                ),
-            )
-
-            AnimatedVisibility(isSuccessUiState) {
-                // 标签行
-                PrimaryTabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    containerColor = Color.Transparent,
-                    divider = {},
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        Tab(
-                            selected = pagerState.currentPage == index,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
-                            },
-                            text = {
-                                Text(stringResource(tab.label))
-                            },
-                        )
-                    }
+    val gridState = rememberLazyGridState()
+    val sharePdf = rememberPdfShareAction()
+    // PDF 内部有同向横向滚动，将剩余位移和速度交给 Pager 的 scrollable 处理，避免中断吸附。
+    val pageScrollConnection = remember { object : NestedScrollConnection {} }
+    LaunchedEffect(pager.currentPage, (state as? CetUiState.Success)?.pdfUiState) {
+        if (pager.currentPage == 1 && (state as? CetUiState.Success)?.pdfUiState == CetUiState.CetPdfUiState.Idle) viewModel.getCetExamPdf()
+    }
+    Scaffold(topBar = { StudyTopBar {
+        PomTopAppBar(title = { Text("四六级") }, shadowElevation = 0.dp, navigationIcon = { BackIconButton(onClick = { backStack.removeLastOrNull() }) },
+            actions = {
+                (state as? CetUiState.Success)?.exam?.note?.takeIf { it.isNotBlank() }?.let { note ->
+                    IconButton(onClick = { backStack.add(CetNoteRoute(note)) }) { Icon(Icons.Outlined.Info, "考试提示") }
+                }
+                IconButton(onClick = viewModel::getCetExam) { Icon(Icons.Rounded.Refresh, "刷新") }
+            })
+        StudyTabs(listOf("考试安排", "通知原文"), pager.currentPage) { index -> scope.launch { pager.animateScrollToPage(index) } }
+    } }, floatingActionButton = {
+        if (pager.currentPage == 0) BackToTopButton(gridState)
+        else (state as? CetUiState.Success)?.let { current ->
+            (current.pdfUiState as? CetUiState.CetPdfUiState.Success)?.let { pdf ->
+                val fileName = current.exam.name.replace("考试时间", "CET考试时间") + ".pdf"
+                SmallFloatingActionButton(onClick = { sharePdf(pdf.pdfBytes, fileName) }) {
+                    Icon(Icons.Rounded.Share, "分享 PDF")
                 }
             }
         }
-    }
-}
-
-/**
- * CET 考试内容。
- */
-@Composable
-private fun CetExamContent(
-    uiState: CetUiState.Success,
-    onLoadPdfBytes: () -> Unit,
-    tabs: List<CetTab>,
-    pagerState: PagerState,
-    sky: Sky,
-    contentPadding: PaddingValues,
-) {
-    LaunchedEffect(pagerState.currentPage) {
-        val tab = tabs[pagerState.currentPage]
-
-        if (tab == CetTab.Details) {
-            // 加载 PDF
-            onLoadPdfBytes()
-        }
-    }
-
-    HorizontalPager(
-        state = pagerState,
-        // 顶栏的毛玻璃要采样这里：滚动内容必须在顶栏下方延伸，
-        // 所以 sky 记在铺满整个内容区的 pager 上
-        modifier = Modifier.fillMaxSize().sky(sky = sky),
-        verticalAlignment = Alignment.Top,
-    ) { page ->
-        val tab = tabs[page]
-
-        when (tab) {
-            CetTab.Overview -> {
-                // 概览
-                CetOverview(
-                    exam = uiState.exam,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = contentPadding,
-                )
-            }
-
-            CetTab.Details -> {
-                // 详情
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    when (val pdfUiState = uiState.pdfUiState) {
-                        is CetUiState.CetPdfUiState.Idle, is CetUiState.CetPdfUiState.Loading -> {
-                            // 空闲、加载中
-                            LoadingContent(
-                                contentPadding = contentPadding,
-                            )
-                        }
-
-                        is CetUiState.CetPdfUiState.Error -> {
-                            // 加载失败
-                            ErrorContent(
-                                throwable = pdfUiState.throwable,
-                                contentPadding = contentPadding,
-                            )
-                        }
-
-                        is CetUiState.CetPdfUiState.Success -> {
-                            val pdfSource = remember(pdfUiState.pdfBytes) {
-                                PdfSource.of(pdfUiState.pdfBytes)
+    }) { padding ->
+        PomPullToRefreshBox(refreshing && state is CetUiState.Success, viewModel::getCetExam, contentPadding = padding,
+            enabled = state is CetUiState.Success) {
+            when (val current = state) {
+                CetUiState.Loading -> LoadingContent(contentPadding = padding)
+                is CetUiState.Error -> Column(Modifier.fillMaxSize().padding(padding), horizontalAlignment = Alignment.CenterHorizontally) {
+                    ErrorContent(current.throwable, Modifier.weight(1f)); TextButton(onClick = viewModel::getCetExam) { Text("重试") }
+                }
+                is CetUiState.Success -> HorizontalPager(pager, Modifier.fillMaxSize().padding(padding.withoutBottom()), verticalAlignment = Alignment.Top,
+                    pageNestedScrollConnection = pageScrollConnection) { page ->
+                    if (page == 0) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                        val items = listOf("四级笔试" to current.exam.cet4Written, "六级笔试" to current.exam.cet6Written,
+                            "四级口语" to current.exam.cet4Speaking, "六级口语" to current.exam.cet6Speaking)
+                        LazyVerticalGrid(GridCells.Adaptive(300.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)),
+                            Modifier.widthIn(max = 1100.dp).fillMaxSize(), state = gridState, contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + padding.calculateBottomPadding()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Text(current.exam.name, style = MaterialTheme.typography.titleMedium)
                             }
-
-                            // 加载成功
-                            PdfViewer(
-                                pdfSource,
-                                shareFileName = "${stringResource(Res.string.cet)}.pdf",
-                                backgroundColor = MaterialTheme.colorScheme.background,
-                                contentPadding = contentPadding,
-                            )
+                            itemsIndexed(items) { index, (label, exam) -> CetCard(label, exam, index) }
+                        }
+                    } else when (val pdf = current.pdfUiState) {
+                        CetUiState.CetPdfUiState.Idle, CetUiState.CetPdfUiState.Loading -> LoadingContent()
+                        is CetUiState.CetPdfUiState.Error -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            ErrorContent(pdf.throwable, Modifier.weight(1f)); TextButton(onClick = viewModel::getCetExamPdf) { Text("重新加载原文") }
+                        }
+                        is CetUiState.CetPdfUiState.Success -> {
+                            val source = remember(pdf.pdfBytes) { PdfSource.of(pdf.pdfBytes) }
+                            PdfViewer(source, showShareButton = false, backgroundColor = MaterialTheme.colorScheme.background)
                         }
                     }
                 }
@@ -344,110 +108,38 @@ private fun CetExamContent(
     }
 }
 
-/**
- * CET 概览。
- */
 @Composable
-private fun CetOverview(
-    exam: CetExam,
-    modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues.Zero,
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(200.dp),
-        modifier = modifier,
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item(
-            span = { GridItemSpan(maxLineSpan) },
-        ) {
-            // 考试名称
-            Text(
-                exam.name,
-            )
-        }
-
-        item {
-            // 英语四级笔试
-            CetExamCard(
-                examItem = exam.cet4Written,
-                labelIcon = Icons.TwoTone.Edit,
-            )
-        }
-        item {
-            // 英语六级笔试
-            CetExamCard(
-                examItem = exam.cet6Written,
-                labelIcon = Icons.TwoTone.Edit,
-            )
-        }
-        item {
-            // 英语四级口语
-            CetExamCard(
-                examItem = exam.cet4Speaking,
-                labelIcon = Icons.TwoTone.SettingsVoice,
-            )
-        }
-        item {
-            // 英语六级口语
-            CetExamCard(
-                examItem = exam.cet6Speaking,
-                labelIcon = Icons.TwoTone.SettingsVoice,
-            )
-        }
+private fun CetNoteSheet(note: String) {
+    val backStack = LocalBackStack.current
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text("考试提示", style = MaterialTheme.typography.titleLarge)
+        SelectionContainer { Text(note, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
 
-/**
- * CET 考试卡片。
- */
 @Composable
-private fun CetExamCard(
-    examItem: CetExamItem,
-    labelIcon: ImageVector,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-    ) {
-        ListItem(
-            headlineContent = {
-                Text(examItem.languages)
-            },
-            overlineContent = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // 日期
-                    Text("${examItem.date}")
-
-                    // 上午/下午
-                    if (examItem.amPmMarker != null) {
-                        Text(
-                            stringResource(
-                                when (examItem.amPmMarker) {
-                                    AmPmMarker.AM -> Res.string.morning
-                                    AmPmMarker.PM -> Res.string.afternoon
-                                },
-                            ),
-                        )
+private fun CetCard(label: String, exam: CetExamItem, index: Int) {
+    Card(shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = androidx.compose.foundation.BorderStroke(.5.dp, MaterialTheme.colorScheme.outlineVariant)) {
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ExpressiveIconBadge(if (index < 2) Icons.Rounded.Edit else Icons.Rounded.Mic, index, false, Modifier.size(36.dp), iconSize = 20.dp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val kind = label.takeLast(2)
+                val name = exam.languages.trim().let { languages ->
+                    when {
+                        languages.isBlank() -> label
+                        kind in languages -> languages
+                        else -> "$languages$kind"
                     }
                 }
-            },
-            trailingContent = {
-                Icon(
-                    labelIcon,
-                    contentDescription = labelIcon.name,
-                    modifier = Modifier.size(20.dp),
-                )
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                supportingContentColor = MaterialTheme.colorScheme.tertiary,
-            ),
-        )
+                Text(name, style = MaterialTheme.typography.titleMedium)
+                val period = exam.amPmMarker?.let { if (it == AmPmMarker.AM) "上午" else "下午" }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(exam.date.toString(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    period?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            }
+        }
     }
 }

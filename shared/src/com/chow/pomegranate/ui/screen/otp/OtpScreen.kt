@@ -1,107 +1,154 @@
 package com.chow.pomegranate.ui.screen.otp
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.navigation3.scene.DialogSceneStrategy
+import androidx.compose.ui.window.DialogProperties
+import com.chow.pomegranate.ui.component.BackToTopButton
+import com.chow.pomegranate.ui.component.LocalAppCoroutineScope
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Checklist
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material.icons.twotone.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.scene.DialogSceneStrategy
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
+import com.chow.pomegranate.tool.clipboard.writePlainText
+import com.chow.pomegranate.clipboard_copy_failed
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.add
 import com.chow.pomegranate.cancel
-import com.chow.pomegranate.confirm_delete_otp
 import com.chow.pomegranate.data.local.OtpAccountEntity
 import com.chow.pomegranate.delete
 import com.chow.pomegranate.edit
 import com.chow.pomegranate.no_otp_accounts
 import com.chow.pomegranate.otp
-import com.chow.pomegranate.otp_account
-import com.chow.pomegranate.otp_digits
-import com.chow.pomegranate.otp_issuer
-import com.chow.pomegranate.otp_period
-import com.chow.pomegranate.otp_secret
-import com.chow.pomegranate.repository.OtpAccountRepository
+import com.chow.pomegranate.otp_account_actions
+import com.chow.pomegranate.otp_code_copied
+import com.chow.pomegranate.otp_confirm_delete_all
+import com.chow.pomegranate.otp_confirm_delete_selected
+import com.chow.pomegranate.otp_copy_code
+import com.chow.pomegranate.otp_delete_all_title
+import com.chow.pomegranate.otp_delete_failed
+import com.chow.pomegranate.otp_delete_irreversible
+import com.chow.pomegranate.otp_delete_selected
+import com.chow.pomegranate.otp_delete_selected_title
+import com.chow.pomegranate.otp_delete_title
+import com.chow.pomegranate.otp_deleted_count
+import com.chow.pomegranate.otp_deleting
+import com.chow.pomegranate.otp_deselect_all
+import com.chow.pomegranate.otp_more_accounts
+import com.chow.pomegranate.otp_remaining_seconds
+import com.chow.pomegranate.otp_select_accounts
+import com.chow.pomegranate.otp_select_all
+import com.chow.pomegranate.otp_selected_count
 import com.chow.pomegranate.save
 import com.chow.pomegranate.tool.otp.TotpGenerator
 import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.LocalSnackbarHostState
 import com.chow.pomegranate.ui.component.PomTopAppBar
+import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
-import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
+import com.chow.pomegranate.ui.theme.DEFAULT_PRIMARY_COLOR
+import com.materialkolor.DynamicMaterialExpressiveTheme
+import com.materialkolor.rememberDynamicMaterialThemeState
 import kotlin.time.Clock
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.twotone.ContentPaste
-import androidx.compose.ui.platform.LocalClipboardManager
-import com.chow.pomegranate.otp_advanced
-import com.chow.pomegranate.otp_import
-import com.chow.pomegranate.otp_import_algorithm
-import com.chow.pomegranate.otp_import_empty
-import com.chow.pomegranate.tool.otp.parseOtpAuthUri
-import com.chow.pomegranate.collapse
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.draw.rotate
-import com.chow.pomegranate.expand
-import androidx.compose.material.icons.twotone.QrCodeScanner
-import com.chow.pomegranate.qr_scan
-import com.chow.pomegranate.tool.qr.QrScannerDialog
 
 /** 注册 OTP 页面与编辑弹窗。 */
 fun EntryProviderScope<NavKey>.otpEntry() {
     entry<OtpRoute> { OtpScreen() }
-    entry<OtpEditorRoute>(metadata = DialogSceneStrategy.dialog()) { route ->
-        OtpEditorDialog(route.accountId)
+    entry<OtpDeleteRoute>(metadata = DialogSceneStrategy.dialog()) { OtpDeleteDialog(it) }
+    entry<OtpEditorRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { route ->
+        OtpEditorSheet(route.accountId)
     }
 }
 
@@ -120,51 +167,110 @@ private fun OtpScreen(
     viewModel: OtpViewModel = koinViewModel(),
 ) {
     val accounts by viewModel.accounts.collectAsState()
-    OtpContent(accounts, viewModel::delete, modifier)
+    OtpContent(accounts, viewModel::deleteAccounts, modifier)
 }
 
-@Preview
+@Preview(name = "窄屏手机", widthDp = 320, heightDp = 640)
+@Preview(name = "手机", widthDp = 411, heightDp = 800)
+@Preview(name = "折叠屏", widthDp = 673, heightDp = 840)
+@Preview(name = "平板横屏", widthDp = 1200, heightDp = 800)
 @Composable
 private fun OtpContentPreview() {
-    PomegranateExpressiveTheme {
-        OtpContent(
-            accounts = listOf(
-                OtpAccountEntity(
-                    id = 1,
-                    issuer = "GitHub",
-                    accountName = "octocat@example.com",
-                    secret = "JBSWY3DPEHPK3PXP",
-                ),
-                OtpAccountEntity(
-                    id = 2,
-                    issuer = "GDUFE",
-                    accountName = "202600000001",
-                    secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
-                    digits = 8,
-                    periodSeconds = 60,
-                ),
-            ),
-            onDelete = { _, _ -> },
-        )
+    OtpGridPreview()
+}
+
+@Preview(name = "两倍字体", widthDp = 320, heightDp = 800)
+@Composable
+private fun OtpLargeFontPreview() {
+    val density = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+        OtpGridPreview()
     }
 }
 
-/** OTP 页内容。 */
+@Preview(name = "深色编辑模式", widthDp = 411, heightDp = 800)
+@Composable
+private fun OtpEditingPreview() {
+    OtpGridPreview(isDark = true, isSelecting = true)
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun OtpGridPreview(isDark: Boolean = false, isSelecting: Boolean = false) {
+    DynamicMaterialExpressiveTheme(
+        state = rememberDynamicMaterialThemeState(primary = DEFAULT_PRIMARY_COLOR, isDark = isDark),
+    ) {
+        Surface {
+            OtpAccountGrid(
+                accounts = listOf(
+                    OtpAccountEntity(1, "GitHub", "octocat@example.com", "JBSWY3DPEHPK3PXP"),
+                    OtpAccountEntity(
+                        2, "GDUFE", "202600000001", "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+                        digits = 8, periodSeconds = 60,
+                    ),
+                    OtpAccountEntity(
+                        3, "名称很长的服务 · Pomegranate", "long.account.name@example.com", "JBSWY3DPEHPK3PXP",
+                    ),
+                ),
+                epochSeconds = 1_700_000_006,
+                isSelecting = isSelecting,
+                onEdit = {},
+                onDelete = {},
+                onCopy = {},
+                selectedIds = if (isSelecting) setOf(1L) else emptySet(),
+                onToggleSelection = {},
+            )
+        }
+    }
+}
+
+@Serializable
+data class OtpDeleteRoute(val ids: List<Long>, val labels: List<String>, val all: Boolean = false) : NavKey
+
+private fun deletionRoute(accounts: List<OtpAccountEntity>, all: Boolean = false) = OtpDeleteRoute(
+    accounts.map { it.id }, accounts.map { "${it.issuer} · ${it.accountName}" }, all)
+
+/** OTP 页内容；普通操作与多选删除分别呈现。 */
 @Composable
 private fun OtpContent(
     accounts: List<OtpAccountEntity>,
-    onDelete: (OtpAccountEntity, (Result<Unit>) -> Unit) -> Unit,
+    onDelete: (List<Long>, (Result<Int>) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val backStack = LocalBackStack.current
     val snackbarHostState = LocalSnackbarHostState.current
+    val clipboard = LocalClipboard.current
+    val copyFailedMessage = stringResource(Res.string.clipboard_copy_failed)
+    val copiedMessage = stringResource(Res.string.otp_code_copied)
+    val deleteFailedMessage = stringResource(Res.string.otp_delete_failed)
     val scope = rememberCoroutineScope()
-    var isEditing by remember { mutableStateOf(false) }
-    var pendingDeletion by remember { mutableStateOf<OtpAccountEntity?>(null) }
+    var isSelecting by rememberSaveable { mutableStateOf(false) }
+    var selectedIds by rememberSaveable(
+        stateSaver = listSaver<Set<Long>, Long>(save = { it.toList() }, restore = { it.toSet() }),
+    ) { mutableStateOf(emptySet<Long>()) }
+    val handleBack = {
+        if (isSelecting) {
+            isSelecting = false
+            selectedIds = emptySet()
+        } else backStack.removeLastOrNull()
+        Unit
+    }
+    NavigationBackHandler(
+        state = rememberNavigationEventState(currentInfo = NavigationEventInfo.None),
+        isBackEnabled = isSelecting && backStack.lastOrNull() == OtpRoute,
+        onBackCompleted = handleBack,
+    )
+    val gridState = rememberLazyGridState()
+    val accountIds = remember(accounts) { accounts.map { it.id }.toSet() }
+    val allSelected = accountIds.isNotEmpty() && selectedIds.containsAll(accountIds)
+    LaunchedEffect(accountIds) {
+        selectedIds = selectedIds.intersect(accountIds)
+        if (accountIds.isEmpty() || selectedIds.isEmpty()) isSelecting = false
+    }
     val epochSeconds by produceState(Clock.System.now().epochSeconds) {
         while (true) {
             value = Clock.System.now().epochSeconds
-            delay(1_000)
+            delay(1_000 - Clock.System.now().toEpochMilliseconds() % 1_000)
         }
     }
 
@@ -172,355 +278,347 @@ private fun OtpContent(
         modifier = modifier,
         topBar = {
             PomTopAppBar(
-                title = { Text(stringResource(Res.string.otp)) },
+                title = {
+                    Text(
+                        if (isSelecting) stringResource(Res.string.otp_selected_count, selectedIds.size)
+                        else stringResource(Res.string.otp),
+                    )
+                },
                 navigationIcon = {
-                    BackIconButton(onClick = { backStack.removeLastOrNull() })
+                    BackIconButton(onClick = handleBack)
                 },
                 actions = {
-                    IconToggleButton(checked = isEditing, onCheckedChange = { isEditing = it }) {
-                        Icon(Icons.TwoTone.Edit, contentDescription = stringResource(Res.string.edit))
+                    if (isSelecting) {
+                        TextButton(onClick = { selectedIds = if (allSelected) emptySet() else accountIds }) {
+                            Text(stringResource(if (allSelected) Res.string.otp_deselect_all else Res.string.otp_select_all))
+                        }
+                        IconButton(
+                            enabled = selectedIds.isNotEmpty(),
+                            onClick = {
+                                backStack.add(deletionRoute(accounts.filter { it.id in selectedIds }, all = allSelected))
+                            },
+                        ) {
+                            Icon(
+                                Icons.TwoTone.Delete,
+                                contentDescription = stringResource(Res.string.otp_delete_selected),
+                                tint = if (selectedIds.isNotEmpty()) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { isSelecting = true }, enabled = accounts.isNotEmpty()) {
+                            Icon(Icons.Rounded.Checklist, contentDescription = stringResource(Res.string.otp_select_accounts))
+                        }
                     }
                 },
             )
         },
         floatingActionButton = {
-            SmallFloatingActionButton(onClick = { backStack.add(OtpEditorRoute()) }) {
-                Icon(Icons.Rounded.Add, contentDescription = stringResource(Res.string.add))
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.End) {
+                BackToTopButton(gridState)
+                if (!isSelecting) SmallFloatingActionButton(onClick = { backStack.add(OtpEditorRoute()) }) {
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(Res.string.add))
+                }
             }
         },
     ) { innerPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(220.dp),
-            contentPadding = innerPadding + PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (accounts.isEmpty()) {
-                item { Text(stringResource(Res.string.no_otp_accounts)) }
-            }
-            items(accounts, key = { it.id }) { account ->
-                OtpCard(
-                    account = account,
-                    epochSeconds = epochSeconds,
-                    isEditing = isEditing,
-                    onEdit = { backStack.add(OtpEditorRoute(account.id)) },
-                    onDelete = { pendingDeletion = account },
-                )
-            }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            OtpAccountGrid(
+                accounts = accounts,
+                gridState = gridState,
+                epochSeconds = epochSeconds,
+                isSelecting = isSelecting,
+                selectedIds = selectedIds,
+                onToggleSelection = { account ->
+                    selectedIds = if (account.id in selectedIds) selectedIds - account.id else selectedIds + account.id
+                },
+                onEdit = { backStack.add(OtpEditorRoute(it.id)) },
+                onDelete = { backStack.add(deletionRoute(listOf(it))) },
+                onCopy = { code ->
+                    scope.launch {
+                        val feedback = try {
+                            clipboard.writePlainText(code)
+                            copiedMessage
+                        } catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { copyFailedMessage }
+                        snackbarHostState.showSnackbar(feedback)
+                    }
+                },
+                modifier = Modifier.widthIn(max = 1200.dp).fillMaxSize(),
+                contentPadding = innerPadding + PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp),
+            )
         }
     }
 
-    pendingDeletion?.let { account ->
-        AlertDialog(
-            onDismissRequest = { pendingDeletion = null },
-            title = { Text(stringResource(Res.string.delete)) },
-            text = { Text(stringResource(Res.string.confirm_delete_otp, account.accountName)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pendingDeletion = null
-                        onDelete(account) { result ->
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    result.fold(
-                                        onSuccess = { "已删除 " + account.accountName + "。" },
-                                        onFailure = { it.message ?: "删除失败。" },
-                                    ),
-                                )
-                            }
-                        }
-                    },
-                ) { Text(stringResource(Res.string.delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDeletion = null }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
+}
+
+@Composable
+private fun OtpDeleteDialog(route: OtpDeleteRoute, viewModel: OtpViewModel = koinViewModel()) {
+    val backStack = LocalBackStack.current
+    val snackbar = LocalSnackbarHostState.current
+    val fallback = rememberCoroutineScope()
+    val scope = LocalAppCoroutineScope.current ?: fallback
+    var deleting by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = { if (!deleting) backStack.removeLastOrNull() },
+        properties = DialogProperties(dismissOnBackPress = !deleting, dismissOnClickOutside = !deleting),
+        icon = { Icon(Icons.TwoTone.Delete, null, tint = MaterialTheme.colorScheme.error) },
+        title = { Text(stringResource(when {
+            route.all -> Res.string.otp_delete_all_title
+            route.ids.size == 1 -> Res.string.otp_delete_title
+            else -> Res.string.otp_delete_selected_title
+        })) },
+        text = {
+            Column(Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(if (route.all) Res.string.otp_confirm_delete_all else Res.string.otp_confirm_delete_selected, route.ids.size))
+                route.labels.take(3).forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                if (route.ids.size > 3) Text(stringResource(Res.string.otp_more_accounts, route.ids.size - 3))
+                Text(stringResource(Res.string.otp_delete_irreversible), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = { TextButton(enabled = !deleting, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error), onClick = {
+            deleting = true
+            viewModel.deleteAccounts(route.ids) { result ->
+                deleting = false
+                result.onSuccess { count ->
+                    backStack.removeLastOrNull()
+                    scope.launch { snackbar.showSnackbar(getString(Res.string.otp_deleted_count, count)) }
+                }.onFailure { error = it.message ?: "删除失败，请重试。" }
+            }
+        }) { Text(stringResource(if (deleting) Res.string.otp_deleting else Res.string.delete)) } },
+        dismissButton = { TextButton(enabled = !deleting, onClick = { backStack.removeLastOrNull() }) { Text(stringResource(Res.string.cancel)) } },
+    )
+}
+
+/** 随窗口宽度和字体大小调整列数，为放大的文字保留空间。 */
+@Composable
+private fun OtpAccountGrid(
+    accounts: List<OtpAccountEntity>,
+    epochSeconds: Long,
+    isSelecting: Boolean,
+    selectedIds: Set<Long>,
+    onToggleSelection: (OtpAccountEntity) -> Unit,
+    onEdit: (OtpAccountEntity) -> Unit,
+    onDelete: (OtpAccountEntity) -> Unit,
+    onCopy: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(16.dp),
+    gridState: LazyGridState = rememberLazyGridState(),
+) {
+    val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+    if (accounts.isEmpty()) {
+        com.chow.pomegranate.ui.component.EmptyContent(modifier, contentPadding, stringResource(Res.string.no_otp_accounts))
+        return
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(300.dp * fontScale),
+        state = gridState,
+        modifier = modifier,
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(accounts, key = { it.id }) { account ->
+            OtpCard(
+                account = account,
+                epochSeconds = epochSeconds,
+                isSelecting = isSelecting,
+                isSelected = account.id in selectedIds,
+                onToggleSelection = { onToggleSelection(account) },
+                modifier = Modifier.animateItem(),
+                onEdit = { onEdit(account) },
+                onDelete = { onDelete(account) },
+                onCopy = onCopy,
+            )
+        }
     }
 }
 
-/** OTP 卡片。 */
+/** Expressive 紧凑卡片；多选与复制反馈不改变验证码本身。 */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun OtpCard(
     account: OtpAccountEntity,
     epochSeconds: Long,
-    isEditing: Boolean,
+    isSelecting: Boolean,
+    isSelected: Boolean,
+    onToggleSelection: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onCopy: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val generator = remember(account.secret, account.digits, account.periodSeconds) {
         TotpGenerator(account.secret, account.digits, account.periodSeconds)
     }
+    val code = generator.generate(epochSeconds)
     val remaining = generator.remainingSeconds(epochSeconds)
+    var copiedCode by remember(account.id) { mutableStateOf<String?>(null) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    val isCopied = copiedCode == code
+    val copyLabel = stringResource(Res.string.otp_copy_code)
+    val selected = isSelecting && isSelected
+    val container by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        MaterialTheme.motionScheme.defaultEffectsSpec(), label = "OTP selection color",
+    )
+    val codeContainer by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+        MaterialTheme.motionScheme.defaultEffectsSpec(), label = "OTP code color",
+    )
+    val codeColor by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+        MaterialTheme.motionScheme.defaultEffectsSpec(), label = "OTP code content",
+    )
+    val countdownDescription = stringResource(Res.string.otp_remaining_seconds, remaining)
+    val countdownColor = if (remaining <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    LaunchedEffect(copiedCode) {
+        if (copiedCode != null) { delay(2_000); copiedCode = null }
+    }
     Card(
-        elevation = CardDefaults.elevatedCardElevation(),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primaryFixed),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(account.issuer, style = MaterialTheme.typography.titleMedium)
-            Text(account.accountName, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                generator.generate(epochSeconds).chunked(3).joinToString(" "),
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.headlineMedium,
-                fontFamily = FontFamily.Monospace,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                LinearProgressIndicator(
-                    progress = { remaining.toFloat() / account.periodSeconds },
-                    modifier = Modifier.weight(1f),
-                )
-                Text(remaining.toString() + "s")
+        onClick = {
+            if (isSelecting) onToggleSelection() else {
+                val currentCode = generator.generate()
+                onCopy(currentCode)
+                copiedCode = currentCode
             }
-            if (isEditing) {
-                Row(modifier = Modifier.align(Alignment.End)) {
-                    IconButton(onClick = onEdit) {
-                        Icon(Icons.TwoTone.Edit, contentDescription = stringResource(Res.string.edit))
+        },
+        modifier = modifier.fillMaxWidth().animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec()).semantics {
+            if (isSelecting) {
+                role = Role.Checkbox
+                toggleableState = if (isSelected) ToggleableState.On else ToggleableState.Off
+            } else onClick(label = copyLabel, action = null)
+        },
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = container),
+        border = BorderStroke(0.5.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        BoxWithConstraints(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            val fontScale = LocalDensity.current.fontScale
+            val stackCode = fontScale > 1.3f || maxWidth < 260.dp || (account.digits > 6 && maxWidth < 300.dp * fontScale)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (isSelecting) {
+                                Checkbox(isSelected, onCheckedChange = null, modifier = Modifier.size(24.dp).clearAndSetSemantics {})
+                            } else {
+                                Surface(
+                                    modifier = Modifier.size(24.dp * fontScale.coerceIn(1f, 2f)),
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Crossfade(targetState = isCopied, label = "OTP copied") { copied ->
+                                            if (copied) Icon(Icons.Rounded.Check, null, Modifier.size(16.dp))
+                                            else Text(account.issuer.trim().ifBlank { account.accountName }.take(1).uppercase(),
+                                                style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics {})
+                                        }
+                                    }
+                                }
+                            }
+                            Text(account.issuer.ifBlank { account.accountName }, style = MaterialTheme.typography.titleMedium,
+                                maxLines = if (stackCode) 2 else 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Text(account.accountName, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium, maxLines = if (stackCode) 2 else 1,
+                            overflow = TextOverflow.Ellipsis)
                     }
-                    IconButton(
-                        onClick = onDelete,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error,
-                        ),
-                    ) {
-                        Icon(Icons.TwoTone.Delete, contentDescription = stringResource(Res.string.delete))
+                    if (!stackCode) {
+                        Surface(shape = MaterialTheme.shapes.medium, color = codeContainer, contentColor = codeColor) {
+                            OtpCode(code, Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+                        }
                     }
+                    if (!isSelecting) {
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Rounded.MoreVert, stringResource(Res.string.otp_account_actions, account.issuer))
+                            }
+                            DropdownMenu(menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                DropdownMenuItem(text = { Text(stringResource(Res.string.edit)) },
+                                    leadingIcon = { Icon(Icons.TwoTone.Edit, null) }, onClick = { menuExpanded = false; onEdit() })
+                                DropdownMenuItem(text = { Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error) },
+                                    leadingIcon = { Icon(Icons.TwoTone.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                                    onClick = { menuExpanded = false; onDelete() })
+                            }
+                        }
+                    }
+                }
+                if (stackCode) {
+                    Surface(shape = MaterialTheme.shapes.medium, color = codeContainer, contentColor = codeColor) {
+                        OtpCode(code, Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp), allowWrap = true)
+                    }
+                }
+                Row(
+                    Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = countdownDescription },
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OtpCountdownProgress(epochSeconds, account.periodSeconds, countdownColor, Modifier.weight(1f).height(2.dp))
+                    Text("${remaining}s", color = if (remaining <= 5) countdownColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium, fontFamily = FontFamily.Monospace)
                 }
             }
         }
     }
 }
 
-/** OTP 新增或编辑弹窗。 */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Material3 进度条按帧平滑递减；新周期重建动画状态，立即复位。 */
 @Composable
-private fun OtpEditorDialog(
-    accountId: Long?,
-    repository: OtpAccountRepository = koinInject(),
+private fun OtpCountdownProgress(
+    epochSeconds: Long,
+    periodSeconds: Long,
+    color: Color,
+    modifier: Modifier = Modifier,
 ) {
-    val backStack = LocalBackStack.current
-    val snackbarHostState = LocalSnackbarHostState.current
-    val scope = rememberCoroutineScope()
-    var issuer by remember { mutableStateOf("") }
-    var accountName by remember { mutableStateOf("") }
-    var secret by remember { mutableStateOf("") }
-    var digits by remember { mutableStateOf("6") }
-    var period by remember { mutableStateOf("30") }
-    var loaded by remember { mutableStateOf(accountId == null) }
-
-    // 从剪贴板导入 otpauth:// 链接
-    val clipboard = LocalClipboardManager.current
-
-    // 高级选项（位数、周期）默认收起，绝大多数服务用 6 位 / 30 秒
-    var advanced by remember { mutableStateOf(false) }
-
-    // 展开箭头旋转角度，用动画过渡而不是直接换图标
-    val advancedRotation by animateFloatAsState(if (advanced) 180f else 0f)
-
-    // 导入提示，null 表示无提示
-    var message by remember { mutableStateOf<String?>(null) }
-
-    // 是否正在扫码
-    var scanning by remember { mutableStateOf(false) }
-
-    // 提示文案在这里取好，onClick 里不能再调用 composable
-    val importEmptyMessage = stringResource(Res.string.otp_import_empty)
-    val importAlgorithmMessage = stringResource(Res.string.otp_import_algorithm)
-
-    /**
-     * 解析 otpauth:// 内容并填入表单。
-     *
-     * 扫码与粘贴链接共用这段逻辑，返回值为提示信息，null 表示成功。
-     */
-    val applyOtpAuthText: (String) -> String? = { text ->
-        val account = parseOtpAuthUri(text)
-
-        when {
-            account == null -> importEmptyMessage
-
-            // 生成器只实现 SHA-1，其他算法会算出错误的验证码
-            account.algorithm != "SHA1" -> importAlgorithmMessage
-
-            else -> {
-                issuer = account.issuer
-                accountName = account.accountName
-                secret = account.secret
-                digits = account.digits.toString()
-                period = account.periodSeconds.toString()
-                null
-            }
+    key(periodSeconds, epochSeconds / periodSeconds) {
+        val remaining = periodSeconds - epochSeconds % periodSeconds
+        val millisIntoSecond = remember(epochSeconds) {
+            val now = Clock.System.now()
+            // 固定时间的预览不跟随真实时钟。
+            if (now.epochSeconds == epochSeconds) now.nanosecondsOfSecond / 1_000_000 else 0
         }
-    }
-
-    LaunchedEffect(accountId) {
-        if (accountId != null) {
-            runCatching { repository.get(accountId) }
-                .onSuccess { account ->
-                    if (account == null) {
-                        snackbarHostState.showSnackbar("找不到该 OTP 账户。")
-                        backStack.removeLastOrNull()
-                    } else {
-                        issuer = account.issuer
-                        accountName = account.accountName
-                        secret = account.secret
-                        digits = account.digits.toString()
-                        period = account.periodSeconds.toString()
-                        loaded = true
-                    }
-                }
-                .onFailure {
-                    snackbarHostState.showSnackbar(it.message ?: "加载失败。")
-                    backStack.removeLastOrNull()
-                }
+        var target by remember {
+            mutableFloatStateOf((remaining - millisIntoSecond / 1_000f) / periodSeconds)
         }
-    }
-
-    if (!loaded) return
-    // 内容放进 Material3 弹窗的各个槽位，容器由 AlertDialog 自己提供
-    AlertDialog(
-        onDismissRequest = { backStack.removeLastOrNull() },
-        title = {
-            Text(
-                if (accountId == null) {
-                    stringResource(Res.string.add)
-                } else {
-                    stringResource(Res.string.edit)
-                },
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // 主流做法是扫二维码，一次填好全部字段
-                TextButton(
-                    onClick = {
-                        message = null
-                        scanning = true
-                    },
-                ) {
-                    Icon(Icons.TwoTone.QrCodeScanner, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(Res.string.qr_scan))
-                }
-
-                // 拿到链接文本时也可以直接粘贴导入
-                TextButton(
-                    onClick = {
-                        message = applyOtpAuthText(clipboard.getText()?.text.orEmpty())
-                    },
-                ) {
-                    Icon(Icons.TwoTone.ContentPaste, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(Res.string.otp_import))
-                }
-
-                // 导入提示
-                message?.let {
-                    Text(
-                        it,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-
-                EditorField(issuer, { issuer = it }, stringResource(Res.string.otp_issuer))
-                EditorField(accountName, { accountName = it }, stringResource(Res.string.otp_account))
-                EditorField(secret, { secret = it }, stringResource(Res.string.otp_secret))
-
-                // 高级选项，默认收起
-                TextButton(onClick = { advanced = !advanced }) {
-                    Icon(
-                        Icons.Rounded.ExpandMore,
-                        contentDescription = stringResource(
-                            if (advanced) Res.string.collapse else Res.string.expand,
-                        ),
-                        modifier = Modifier.rotate(advancedRotation),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(Res.string.otp_advanced))
-                }
-
-                AnimatedVisibility(visible = advanced) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        EditorField(
-                            digits,
-                            { digits = it.filter(Char::isDigit) },
-                            stringResource(Res.string.otp_digits),
-                            Modifier.weight(1f),
-                        )
-                        EditorField(
-                            period,
-                            { period = it.filter(Char::isDigit) },
-                            stringResource(Res.string.otp_period),
-                            Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            FilledTonalButton(
-                onClick = {
-                    scope.launch {
-                        runCatching {
-                            repository.save(
-                                OtpAccountEntity(
-                                    id = accountId ?: 0,
-                                    issuer = issuer,
-                                    accountName = accountName,
-                                    secret = secret,
-                                    digits = digits.toIntOrNull() ?: 0,
-                                    periodSeconds = period.toLongOrNull() ?: 0,
-                                ),
-                            )
-                        }.onSuccess {
-                            snackbarHostState.showSnackbar(
-                                if (accountId == null) "OTP 账户已添加。" else "OTP 账户已更新。",
-                            )
-                            backStack.removeLastOrNull()
-                        }.onFailure {
-                            snackbarHostState.showSnackbar(it.message ?: "保存失败。")
-                        }
-                    }
-                },
-            ) { Text(stringResource(Res.string.save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = { backStack.removeLastOrNull() }) {
-                Text(stringResource(Res.string.cancel))
-            }
-        },
-    )
-
-    // 扫码界面，识别成功后填入表单
-    if (scanning) {
-        QrScannerDialog(
-            onResult = { text ->
-                scanning = false
-                message = applyOtpAuthText(text)
-            },
-            onDismiss = { scanning = false },
+        val progress by animateFloatAsState(
+            targetValue = target,
+            animationSpec = tween(durationMillis = 1_000 - millisIntoSecond, easing = LinearEasing),
+            label = "OTP countdown",
+        )
+        LaunchedEffect(epochSeconds) {
+            target = (remaining - 1).toFloat() / periodSeconds
+        }
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = modifier,
+            color = color,
+            strokeCap = StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {},
         )
     }
 }
 
+/** 验证码使用主题字号；极窄布局允许按分组换行，不缩小文字。 */
 @Composable
-private fun EditorField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+private fun OtpCode(
+    code: String,
+    modifier: Modifier = Modifier,
+    allowWrap: Boolean = false,
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        singleLine = true,
+    Text(
+        text = code.chunked((code.length + 1) / 2).joinToString(" "),
         modifier = modifier,
+        style = MaterialTheme.typography.headlineSmall,
+        fontFamily = FontFamily.Monospace,
+        maxLines = if (allowWrap) 2 else 1,
+        softWrap = allowWrap,
     )
 }
