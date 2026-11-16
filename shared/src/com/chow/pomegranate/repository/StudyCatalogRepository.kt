@@ -33,7 +33,7 @@ class StudyCatalogRepository(
                     detail = StudyDetailRoute("teacher:${teacher.id}", teacher.name, teacher.department.orEmpty(), teacherId = teacher.id))
             })), result.hasMorePages)
         }
-        AcademicFeature.AcademicPlan -> StudyCatalog(academic.academic.getAcademicPlan().courses.groupBy { it.semester }.toSortedMap().map { (term, courses) ->
+        AcademicFeature.AcademicPlan -> StudyCatalog(academic.academic.getAcademicPlan().courses.groupBy { it.semester }.entries.sortedBy { it.key }.map { (term, courses) ->
             StudyGroup(term.toString(), courses.map { course ->
                 val id = "plan:$term:${course.courseId}"
                 val sections = listOf(StudySection("课程信息", fields("课程编号" to course.courseId, "学分" to credit(course.credits),
@@ -124,7 +124,7 @@ private fun dateTime(epoch: Long) = Instant.fromEpochMilliseconds(epoch).toLocal
 
 /** 先筛课次、再按课程合并；保留原始课表以便搜索、筛选和刷新复用同一份数据。 */
 internal fun CourseTimetable.toStudyCatalog(matches: List<TimetableCourse> = courses): StudyCatalog =
-    StudyCatalog(listOf(StudyGroup("课程", matches.groupBy { it.name }.toSortedMap().map { (name, courses) ->
+    StudyCatalog(listOf(StudyGroup("课程", matches.groupBy { it.name }.entries.sortedBy { it.key }.map { (name, courses) ->
         val teachers = courses.mapNotNull { it.teacher }.distinct().joinToString("、")
         val sections = courses.sortedWith(compareBy({ it.dayOfWeek.ordinal }, { it.sections.minOrNull() ?: 0 }))
             .mapIndexed { index, course -> StudySection("课次 ${index + 1}",

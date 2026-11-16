@@ -1,4 +1,5 @@
 name: Tag release
+run-name: ${{ github.event.head_commit.message }}
 
 on:
   push:
@@ -85,9 +86,6 @@ jobs:
           - os: windows-2022
             platform: windows-x64
             extension: msi
-          - os: macos-15
-            platform: macos-arm64
-            extension: dmg
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     env:
@@ -126,19 +124,37 @@ jobs:
           path: artifacts/*
           if-no-files-found: error
 
-  ios:
+  # macOS and iOS share one ARM runner to reduce hosted-runner queue pressure.
+  apple:
     needs: prepare
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 150
     env:
       RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
       PACKAGE_VERSION: ${{ needs.prepare.outputs.package-version }}
+      PACKAGE_EXTENSION: dmg
+      PACKAGE_PLATFORM: macos-arm64
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/toolchain-setup
       - name: Apply release version
         run: python .github/scripts/release_version.py --apply
+      - name: Build macOS installer
+        run: ./kotlin do packageDesktop -m desktopApp
+      - name: Collect macOS installer
+        run: python .github/scripts/collect_installer.py
+      - name: Upload macOS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-macos-arm64
+          path: artifacts/*.dmg
+          if-no-files-found: error
+          overwrite: true
       - name: Build iOS simulator app
+        env:
+          # The pinned Toolchain starts konanc with a fixed 3 GB heap. Apply the
+          # override to its JVM child as well; the optimized Compose link needs 4 GB.
+          _JAVA_OPTIONS: -Xmx4g
         run: |
           xcodebuild build \
             -project iosApp/module.xcodeproj \
@@ -161,9 +177,10 @@ jobs:
           name: package-ios-simulator
           path: artifacts/*.zip
           if-no-files-found: error
+          overwrite: true
 
   publish:
-    needs: [prepare, android, desktop, ios]
+    needs: [prepare, android, desktop, apple]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
