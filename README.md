@@ -10,10 +10,30 @@
 > 小石榴是一款直连学校官网的**非官方**广财教务系统客户端，由广财 21 级某不知名电商学长开发维护，无广告、无付费功能。
 > 如果方便的话可以点一下仓库的星标，这是对项目最大的支持。
 
-> 小石榴现已借助 AI 重做完成，预计国庆期间会打测试包发布。
+> 小石榴现已借助 AI 重做完成。
 > 由于没有账号测试，潜在的问题无法发现，目前处于测试阶段。
 > 新的小石榴与[旧版](https://github.com/Kiteio/Punica)可以并存，重要的操作建议在旧版完成。
 > 如有问题，请新建 issues 或发送邮箱 `changwingchow@163.com`。
+
+<table>
+  <tr><th colspan="3">桌面端 · 亮色演示</th></tr>
+  <tr><th width="33%">模块</th><th width="33%">课表</th><th width="33%">我</th></tr>
+  <tr>
+    <td><img src="readme/desktop-modules.png" alt="桌面端模块页，亮色演示模式" width="100%" /></td>
+    <td><img src="readme/desktop-timetable.png" alt="桌面端课表页，亮色演示模式" width="100%" /></td>
+    <td><img src="readme/desktop-me.png" alt="桌面端我的页面，亮色演示模式" width="100%" /></td>
+  </tr>
+</table>
+
+<table>
+  <tr><th colspan="3">手机端 · 亮色演示</th></tr>
+  <tr><th width="33%">模块</th><th width="33%">课表</th><th width="33%">我</th></tr>
+  <tr>
+    <td><img src="readme/phone-modules.png" alt="手机端模块页，亮色演示模式" width="100%" /></td>
+    <td><img src="readme/phone-timetable.png" alt="手机端课表页，亮色演示模式" width="100%" /></td>
+    <td><img src="readme/phone-me.png" alt="手机端我的页面，亮色演示模式" width="100%" /></td>
+  </tr>
+</table>
 
 ## 数据与隐私
 
@@ -25,38 +45,18 @@
 
 ### Android
 
-- `Pomegranate-x.x.x-android-release.apk`：正式签名安装包。
+- <code>Pomegranate-x.x.x-<strong>android</strong>-release.apk</code>：正式签名安装包。
 
 ### Desktop
 
-- `Pomegranate-x.x.x-windows-x64.msi`：Windows 安装包。
-- `Pomegranate-x.x.x-windows-x64-portable.zip`：Windows 免安装包。
-- `Pomegranate-x.x.x-macos-arm64.dmg`：Apple Silicon Mac 安装包。
-- `Pomegranate-x.x.x-linux-x64.deb`：Linux 安装包。
+- <code>Pomegranate-x.x.x-<strong>windows</strong>-x64.msi</code>：Windows 安装包。
+- <code>Pomegranate-x.x.x-<strong>windows</strong>-x64-portable.zip</code>：Windows 免安装包。
+- <code>Pomegranate-x.x.x-<strong>macos</strong>-arm64.dmg</code>：Apple Silicon Mac 安装包。
+- <code>Pomegranate-x.x.x-<strong>linux</strong>-x64.deb</code>：Linux 安装包。
 
-### iOS
+### iOS（模拟器，经费不足）
 
-- `Pomegranate-x.x.x-ios-simulator-arm64.zip`：模拟器包，不能安装到 iPhone。
-
-## 功能
-
-- 个人课表
-- OTP 动态验证码
-- 紧急电话
-- 教学通知
-- 常用网站
-- 考试安排
-- 四六级
-- 课程成绩
-- 选课系统
-- 第二课堂
-- 教师信息
-- 全校课表
-- 执行计划
-- 学业进度
-- 培养方案
-- 名称替换：教室与课程名称分别管理，本机所有账号共用。单门课程编辑优先于用户规则，用户规则优先于内置简称；详情保留原始教室和课程名称。内置规则支持逐条或全部关闭，自定义规则支持批量删除。
-- 全校课表：顶部切换学期，按账号与学期保存本地数据，首次进入刷新后复用缓存，可单独删除某个学期的本地课表。
+- <code>Pomegranate-x.x.x-<strong>ios-simulator</strong>-arm64.zip</code>：模拟器包，不能安装到 iPhone。
 
 ## 许可证
 
