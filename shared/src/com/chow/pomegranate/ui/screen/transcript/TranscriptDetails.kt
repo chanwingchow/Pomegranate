@@ -21,6 +21,7 @@ import com.chow.pomegranate.repository.credit
 import com.chow.pomegranate.repository.fields
 import com.chow.pomegranate.service.academic.affairs.model.LevelGrade
 import com.chow.pomegranate.ui.component.*
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.navigation.DialogListDetailSceneStrategy
 import kotlinx.serialization.Serializable
@@ -33,7 +34,7 @@ internal data class TranscriptOverviewRoute(val description: String) : NavKey
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 internal fun EntryProviderScope<NavKey>.transcriptDetailEntries() {
     entry<TranscriptDetailRoute>(metadata = ListDetailSceneStrategy.detailPane(sceneKey = "transcript") + DialogListDetailSceneStrategy.metadata()) { TranscriptDetail(it) }
-    entry<TranscriptOverviewRoute>(metadata = DialogSceneStrategy.dialog()) { route ->
+    entry<TranscriptOverviewRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { route ->
         val backStack = LocalBackStack.current
         // 接口概览为一段原始描述，不拆成指标卡片。
         AlertDialog(onDismissRequest = { backStack.removeLastOrNull() }, title = { Text("课程概览") },

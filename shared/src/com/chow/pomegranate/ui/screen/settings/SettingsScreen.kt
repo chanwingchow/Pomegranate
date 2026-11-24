@@ -24,7 +24,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Domain
-import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
@@ -34,6 +33,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import com.chow.pomegranate.ui.component.PomSettingRow
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import androidx.compose.material.icons.twotone.AutoMode
 import androidx.compose.material.icons.twotone.DarkMode
@@ -122,7 +122,7 @@ fun EntryProviderScope<NavKey>.settingsEntry() {
     entry<ClassroomRulesRoute> { ClassroomRulesScreen() }
     entry<ClassroomRuleEditorRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { ClassroomRuleEditorSheet(it) }
     entry<ClassroomBuiltinRulesRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { ClassroomBuiltinRulesSheet(it) }
-    entry<ClassroomRuleDeleteRoute>(metadata = DialogSceneStrategy.dialog()) { ClassroomRuleDeleteDialog(it) }
+    entry<ClassroomRuleDeleteRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { ClassroomRuleDeleteDialog(it) }
 }
 
 /**

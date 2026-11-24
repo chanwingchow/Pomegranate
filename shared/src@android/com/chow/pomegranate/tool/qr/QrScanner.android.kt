@@ -2,8 +2,13 @@ package com.chow.pomegranate.tool.qr
 
 import android.Manifest
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.util.Log
+import android.util.Size
+import android.view.View
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,14 +16,21 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.PhotoLibrary
@@ -34,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,34 +55,31 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chow.pomegranate.Res
+import com.chow.pomegranate.qr_image_read_failed
 import com.chow.pomegranate.qr_need_camera
 import com.chow.pomegranate.qr_no_code_found
 import com.chow.pomegranate.qr_pick_image
-import com.google.mlkit.vision.barcode.BarcodeScanner
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
+import com.chow.pomegranate.ui.component.LocalSnackbarHostState
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.LuminanceSource
+import com.google.zxing.PlanarYUVLuminanceSource
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.ReaderException
+import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.qrcode.QRCodeReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
-import java.util.concurrent.atomic.AtomicBoolean
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
+import java.util.concurrent.Executors
 
 /** 相机扫码界面，也支持从相册选图识别。 */
 @Composable
-actual fun QrScannerDialog(
+actual fun QrScannerScreen(
     onResult: (String) -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -86,231 +96,210 @@ actual fun QrScannerDialog(
         if (!granted) launcher.launch(Manifest.permission.CAMERA)
     }
 
-    // 只识别二维码；模型内置，不需要联网下载
-    val scanner = remember {
-        BarcodeScanning.getClient(
-            BarcodeScannerOptions.Builder()
-                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                .build(),
-        )
-    }
-
-    // 相册图片识别失败时的提示
-    var message by remember { mutableStateOf<String?>(null) }
+    val snackbar = LocalSnackbarHostState.current
     val noCodeMessage = stringResource(Res.string.qr_no_code_found)
-
-    DisposableEffect(Unit) {
-        onDispose { scanner.close() }
-    }
+    val readFailedMessage = stringResource(Res.string.qr_image_read_failed)
+    var selectingImage by remember { mutableStateOf(false) }
 
     // 从相册选一张图
     val pickLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
+        if (uri == null) {
+            selectingImage = false
+            return@rememberLauncherForActivityResult
+        }
 
         scope.launch {
-            // 读图片是 IO 操作，放到后台线程
-            val image = withContext(Dispatchers.IO) { context.loadImage(uri) }
-
-            if (image == null) {
-                message = noCodeMessage
-                return@launch
-            }
-
-            scanner.process(image)
-                .addOnSuccessListener { barcodes ->
-                    val value = barcodes.firstNotNullOfOrNull { it.rawValue }
-
-                    if (value != null) onResult(value) else message = noCodeMessage
-                }
-                .addOnFailureListener { message = noCodeMessage }
+            val result = withContext(Dispatchers.IO) { context.decodeQrImage(uri) }
+            selectingImage = false
+            result.fold(
+                onSuccess = { value ->
+                    if (value != null) onResult(value) else snackbar.showSnackbar(noCodeMessage)
+                },
+                onFailure = { snackbar.showSnackbar(readFailedMessage) },
+            )
         }
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            // 不内缩，取景框才能铺满到状态栏和导航栏
-            decorFitsSystemWindows = false,
-        ),
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
     ) {
-        Box(
+        if (granted && !selectingImage) {
+            CameraPreview(onResult = onResult)
+        } else if (!granted) {
+            // 没有相机权限时仍可从相册选图
+            Text(
+                text = stringResource(Res.string.qr_need_camera),
+                modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+
+        // 关闭，避开状态栏
+        IconButton(
+            onClick = onBack,
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Top + WindowInsetsSides.End,
+                    ),
+                )
+                .padding(16.dp),
         ) {
-            if (granted) {
-                CameraPreview(scanner = scanner, onResult = onResult)
-            } else {
-                // 没有相机权限时仍可从相册选图
-                Text(
-                    text = stringResource(Res.string.qr_need_camera),
-                    modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge,
+            Icon(
+                Icons.Rounded.Close,
+                contentDescription = null,
+                tint = Color.White,
+            )
+        }
+
+        Button(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
                 )
-            }
-
-            // 关闭，避开状态栏
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Top + WindowInsetsSides.End,
-                        ),
-                    )
-                    .padding(16.dp),
-            ) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = null,
-                    tint = Color.White,
+                .padding(24.dp),
+            enabled = !selectingImage,
+            onClick = {
+                selectingImage = true
+                pickLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                 )
-            }
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
-                        ),
-                    )
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // 识别失败提示
-                message?.let {
-                    Text(
-                        text = it,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
-                // 从相册选择
-                Button(
-                    onClick = {
-                        message = null
-                        pickLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                        )
-                    },
-                ) {
-                    Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
-                    Text(
-                        text = stringResource(Res.string.qr_pick_image),
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-                }
-            }
+            },
+        ) {
+            Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
+            Text(
+                text = stringResource(Res.string.qr_pick_image),
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
     }
 }
 
-/**
- * 相机预览与二维码识别。
- *
- * @param scanner 与相册识别共用的识别器
- */
 @Composable
-private fun CameraPreview(
-    scanner: BarcodeScanner,
-    onResult: (String) -> Unit,
-) {
+private fun CameraPreview(onResult: (String) -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
+    val previewView = remember(context) { PreviewView(context) }
+    val currentOnResult by rememberUpdatedState(onResult)
 
-    // 已回调过就不再处理，避免连续识别重复触发
-    val handled = remember { AtomicBoolean(false) }
+    DisposableEffect(previewView, lifecycleOwner) {
+        val mainExecutor = context.mainExecutor
+        val analysisExecutor = Executors.newSingleThreadExecutor()
+        var active = true
+        var cameraProvider: ProcessCameraProvider? = null
 
-    // 关掉扫码界面时必须显式解绑相机。
-    // 这里不能只依赖 lifecycleOwner：它在 NavDisplay 里是当前场景的 owner，
-    // 只要宿主弹窗还在栈上就一直是 RESUMED，相机不会被自动释放——
-    // 表现为隐私指示灯常亮、耗电，其他 App 打不开相机。
-    DisposableEffect(Unit) {
+        val fullHdResolution = ResolutionSelector.Builder()
+            .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+            .setResolutionStrategy(
+                ResolutionStrategy(Size(1920, 1080), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER),
+            )
+            .build()
+        val preview = Preview.Builder()
+            .setResolutionSelector(fullHdResolution)
+            .build()
+            .also { it.setSurfaceProvider(previewView.surfaceProvider) }
+        val analysis = ImageAnalysis.Builder()
+            .setResolutionSelector(fullHdResolution)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+        analysis.setAnalyzer(analysisExecutor, QrAnalyzer { value ->
+            mainExecutor.execute { if (active) currentOnResult(value) }
+        })
+
+        fun bindCamera() {
+            val provider = cameraProvider ?: return
+            val rotation = previewView.display?.rotation ?: return
+            val viewPort = previewView.getViewPort(rotation) ?: return
+            runCatching {
+                provider.unbind(preview, analysis)
+                preview.targetRotation = rotation
+                analysis.targetRotation = rotation
+                val useCases = UseCaseGroup.Builder()
+                    .setViewPort(viewPort)
+                    .addUseCase(preview)
+                    .addUseCase(analysis)
+                    .build()
+                provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, useCases)
+                if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+                    val previewInfo = preview.resolutionInfo
+                    val analysisInfo = analysis.resolutionInfo
+                    Log.d(
+                        "QrScanner",
+                        "Preview ${previewInfo?.resolution}, crop=${previewInfo?.cropRect}; " +
+                            "analysis ${analysisInfo?.resolution}, crop=${analysisInfo?.cropRect}",
+                    )
+                }
+            }.onFailure { Log.w("QrScanner", "Unable to bind camera preview and analysis", it) }
+        }
+
+        val layoutListener = View.OnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) bindCamera()
+        }
+        previewView.addOnLayoutChangeListener(layoutListener)
+        val providerFuture = ProcessCameraProvider.getInstance(context)
+        providerFuture.addListener(
+            {
+                if (active) {
+                    runCatching {
+                        cameraProvider = providerFuture.get()
+                        bindCamera()
+                    }.onFailure { Log.w("QrScanner", "Unable to obtain camera provider", it) }
+                }
+            },
+            mainExecutor,
+        )
+
+        // 弹窗关闭后，导航页面的 lifecycleOwner 仍可能处于 RESUMED。
         onDispose {
-            runCatching { ProcessCameraProvider.getInstance(context).get().unbindAll() }
+            active = false
+            previewView.removeOnLayoutChangeListener(layoutListener)
+            analysis.clearAnalyzer()
+            cameraProvider?.unbind(preview, analysis)
+            analysisExecutor.shutdown()
         }
     }
 
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { ctx ->
-            val previewView = PreviewView(ctx)
-            val executor = ctx.mainExecutor
-
-            val providerFuture = ProcessCameraProvider.getInstance(ctx)
-            providerFuture.addListener(
-                {
-                    val provider = providerFuture.get()
-
-                    val preview = Preview.Builder()
-                        .build()
-                        .also { it.setSurfaceProvider(previewView.surfaceProvider) }
-
-                    val analysis = ImageAnalysis.Builder()
-                        // 只保留最新一帧，扫码不需要排队
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also { it.setAnalyzer(executor, QrAnalyzer(scanner, handled, onResult)) }
-
-                    runCatching {
-                        provider.unbindAll()
-                        provider.bindToLifecycle(
-                            lifecycleOwner,
-                            CameraSelector.DEFAULT_BACK_CAMERA,
-                            preview,
-                            analysis,
-                        )
-                    }
-                },
-                executor,
-            )
-
-            previewView
-        },
-    )
+    AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 }
 
-/**
- * 相机帧分析器。
- *
- * 将 [ImageProxy] 的底层图像交给 ML Kit，并确保每帧最终都会关闭。
- */
-private class QrAnalyzer(
-    private val scanner: BarcodeScanner,
-    private val handled: AtomicBoolean,
-    private val onResult: (String) -> Unit,
-) : ImageAnalysis.Analyzer {
+private class QrAnalyzer(private val onResult: (String) -> Unit) : ImageAnalysis.Analyzer {
+    private val reader = QRCodeReader()
+    private var luminance = ByteArray(0)
+    private var lastValue: String? = null
+
     override fun analyze(proxy: ImageProxy) {
-        val mediaImage = proxy.image
+        try {
+            val crop = proxy.cropRect
+            val width = crop.width()
+            val height = crop.height()
+            if (luminance.size != width * height) luminance = ByteArray(width * height)
 
-        if (mediaImage == null || handled.get()) {
-            proxy.close()
-            return
-        }
-
-        val image = InputImage.fromMediaImage(mediaImage, proxy.imageInfo.rotationDegrees)
-
-        scanner.process(image)
-            .addOnSuccessListener { barcodes ->
-                val value = barcodes.firstNotNullOfOrNull { it.rawValue }
-
-                // 只回调第一次识别结果
-                if (value != null && handled.compareAndSet(false, true)) {
-                    onResult(value)
-                }
+            // Y 平面每像素占一个字节，逐行读取即可跳过行尾填充。
+            val plane = proxy.planes[0]
+            val buffer = plane.buffer.duplicate()
+            val start = buffer.position() + crop.top * plane.rowStride + crop.left
+            repeat(height) { row ->
+                buffer.position(start + row * plane.rowStride)
+                buffer.get(luminance, row * width, width)
             }
-            // 无论成功失败都要关掉这一帧，否则后续帧不会送进来
-            .addOnCompleteListener { proxy.close() }
+
+            val source = PlanarYUVLuminanceSource(luminance, width, height, 0, 0, width, height, false)
+            val value = reader.decodeQr(source) ?: return
+            if (value == lastValue) return
+            lastValue = value
+            onResult(value)
+        } finally {
+            proxy.close()
+        }
     }
 }
 
@@ -318,6 +307,43 @@ private class QrAnalyzer(
 private fun Context.hasCameraPermission(): Boolean =
     checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
-/** 读取相册图片，失败时返回 `null`。 */
-private fun Context.loadImage(uri: Uri): InputImage? =
-    runCatching { InputImage.fromFilePath(this, uri) }.getOrNull()
+private fun Context.decodeQrImage(uri: Uri): Result<String?> = runCatching {
+    val bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, uri)) { decoder, info, _ ->
+        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+        val size = info.size
+        val longestEdge = maxOf(size.width, size.height)
+        if (longestEdge > MAX_GALLERY_IMAGE_EDGE) {
+            val scale = MAX_GALLERY_IMAGE_EDGE.toDouble() / longestEdge
+            decoder.setTargetSize(
+                (size.width * scale).toInt().coerceAtLeast(1),
+                (size.height * scale).toInt().coerceAtLeast(1),
+            )
+        }
+    }
+    try {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        QRCodeReader().decodeQr(RGBLuminanceSource(width, height, pixels))
+    } finally {
+        bitmap.recycle()
+    }
+}
+
+private fun QRCodeReader.decodeQr(source: LuminanceSource): String? {
+    val bitmap = BinaryBitmap(HybridBinarizer(source))
+    return try {
+        decode(bitmap).text
+    } catch (_: ReaderException) {
+        try {
+            // 复用二值化结果，尝试识别白码黑底的二维码。
+            bitmap.blackMatrix.flip()
+            decode(bitmap).text
+        } catch (_: ReaderException) {
+            null
+        }
+    }
+}
+
+private const val MAX_GALLERY_IMAGE_EDGE = 2560

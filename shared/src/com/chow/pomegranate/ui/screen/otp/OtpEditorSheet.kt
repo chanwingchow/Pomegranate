@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import com.chow.pomegranate.ui.component.PomTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.result.ResultEffect
 import com.chow.pomegranate.tool.clipboard.readPlainText
 import com.chow.pomegranate.clipboard_read_failed
 import com.chow.pomegranate.Res
@@ -83,9 +85,10 @@ import com.chow.pomegranate.otp_secret_hint
 import com.chow.pomegranate.otp_secret_invalid
 import com.chow.pomegranate.repository.OtpAccountRepository
 import com.chow.pomegranate.save
+import com.chow.pomegranate.tool.otp.OtpAuthAccount
 import com.chow.pomegranate.tool.otp.TotpGenerator
 import com.chow.pomegranate.tool.otp.parseOtpAuthUri
-import com.chow.pomegranate.tool.qr.QrScannerDialog
+import com.chow.pomegranate.ui.component.AppSnackbarHost
 import com.chow.pomegranate.ui.component.VisibilityIconButton
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import kotlinx.coroutines.CancellationException
@@ -110,9 +113,9 @@ internal fun OtpEditorSheet(accountId: Long?, repository: OtpAccountRepository =
     var advanced by rememberSaveable(accountId) { mutableStateOf(false) }
     var submitted by rememberSaveable(accountId) { mutableStateOf(false) }
     var secretVisible by remember { mutableStateOf(false) }
-    var scanning by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
+    val importSnackbar = remember { SnackbarHostState() }
     val missingMessage = stringResource(Res.string.otp_account_missing)
     val clipboardReadFailed = stringResource(Res.string.clipboard_read_failed)
     val importEmptyMessage = stringResource(Res.string.otp_import_empty)
@@ -131,22 +134,31 @@ internal fun OtpEditorSheet(accountId: Long?, repository: OtpAccountRepository =
         if (backStack.lastOrNull() == OtpEditorRoute(accountId)) backStack.removeLastOrNull()
         Unit
     }
-    val applyOtpAuthText: (String) -> Unit = { text ->
-        val imported = parseOtpAuthUri(text)
-        message = when {
-            imported == null -> importEmptyMessage
-            imported.algorithm != "SHA1" -> algorithmMessage
-            else -> {
-                issuer = imported.issuer
-                accountName = imported.accountName
-                secret = imported.secret
-                digits = imported.digits.toString()
-                period = imported.periodSeconds.toString()
-                submitted = false
-                null
-            }
+    fun showImportFeedback(feedback: String) {
+        scope.launch {
+            importSnackbar.currentSnackbarData?.dismiss()
+            importSnackbar.showSnackbar(feedback)
         }
     }
+    fun applyImportedAccount(account: OtpAuthAccount) {
+        issuer = account.issuer
+        accountName = account.accountName
+        secret = account.secret
+        digits = account.digits.toString()
+        period = account.periodSeconds.toString()
+        submitted = false
+        message = null
+        importSnackbar.currentSnackbarData?.dismiss()
+    }
+    fun importFromClipboard(text: String) {
+        val account = parseOtpAuthUri(text)
+        when {
+            account == null -> showImportFeedback(importEmptyMessage)
+            account.algorithm != "SHA1" -> showImportFeedback(algorithmMessage)
+            else -> applyImportedAccount(account)
+        }
+    }
+    ResultEffect<OtpAuthAccount> { applyImportedAccount(it) }
     LaunchedEffect(accountId) {
         if (accountId != null && !loaded) {
             runCatching { repository.get(accountId) }.onSuccess { account ->
@@ -186,12 +198,17 @@ internal fun OtpEditorSheet(accountId: Long?, repository: OtpAccountRepository =
             } else {
                 OtpImportActions(
                     enabled = !saving,
-                    onScan = { message = null; scanning = true },
+                    onScan = {
+                        message = null
+                        importSnackbar.currentSnackbarData?.dismiss()
+                        keyboard?.hide()
+                        if (backStack.lastOrNull() == OtpEditorRoute(accountId)) backStack.add(OtpScanRoute)
+                    },
                     onPaste = {
                         scope.launch {
-                            try { applyOtpAuthText(clipboard.readPlainText().orEmpty()) }
+                            try { importFromClipboard(clipboard.readPlainText().orEmpty()) }
                             catch (cancelled: CancellationException) { throw cancelled }
-                            catch (_: Exception) { message = clipboardReadFailed }
+                            catch (_: Exception) { showImportFeedback(clipboardReadFailed) }
                         }
                     },
                 )
@@ -251,32 +268,31 @@ internal fun OtpEditorSheet(accountId: Long?, repository: OtpAccountRepository =
                 message?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
             }
         }
-        Button(
-            shapes = ButtonDefaults.shapes(),
-            enabled = loaded && !saving,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-            onClick = {
-                submitted = true
-                if (!digitsValid || !periodValid) advanced = true
-                if (valid) {
-                    saving = true
-                    message = null
-                    keyboard?.hide()
-                    scope.launch {
-                        runCatching {
-                            repository.save(OtpAccountEntity(accountId ?: 0, issuer, accountName, secret,
-                                digits.toInt(), period.toLong()))
-                        }.onSuccess { dismiss() }.onFailure { message = it.message ?: saveFailedMessage }
-                        saving = false
+        Column {
+            AppSnackbarHost(importSnackbar, Modifier.align(Alignment.CenterHorizontally))
+            Button(
+                shapes = ButtonDefaults.shapes(),
+                enabled = loaded && !saving,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                onClick = {
+                    submitted = true
+                    if (!digitsValid || !periodValid) advanced = true
+                    if (valid) {
+                        saving = true
+                        message = null
+                        keyboard?.hide()
+                        scope.launch {
+                            runCatching {
+                                repository.save(OtpAccountEntity(accountId ?: 0, issuer, accountName, secret,
+                                    digits.toInt(), period.toLong()))
+                            }.onSuccess { dismiss() }.onFailure { message = it.message ?: saveFailedMessage }
+                            saving = false
+                        }
                     }
-                }
-            },
-        ) { Text(stringResource(if (saving) Res.string.otp_saving else Res.string.save)) }
+                },
+            ) { Text(stringResource(if (saving) Res.string.otp_saving else Res.string.save)) }
+        }
     }
-    if (scanning) QrScannerDialog(
-        onResult = { scanning = false; applyOtpAuthText(it) },
-        onDismiss = { scanning = false },
-    )
 }
 
 @Composable

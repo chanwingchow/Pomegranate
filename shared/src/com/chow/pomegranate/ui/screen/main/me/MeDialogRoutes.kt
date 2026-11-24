@@ -6,9 +6,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.scene.DialogSceneStrategy
 import com.chow.pomegranate.ui.component.LocalAppCoroutineScope
 import com.chow.pomegranate.ui.component.LocalSnackbarHostState
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.DEFAULT_PRIMARY_COLOR
@@ -21,7 +21,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 fun EntryProviderScope<NavKey>.meDialogEntries() {
     entry<ThemeColorRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { route -> ThemeColorDestination(route) }
-    entry<AvatarActionsRoute>(metadata = DialogSceneStrategy.dialog()) { AvatarActionsDestination() }
+    entry<AvatarActionsRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { AvatarActionsDestination() }
 }
 
 @Composable

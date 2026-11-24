@@ -1,29 +1,30 @@
 package com.chow.pomegranate.tool.qr
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.cancel
 import com.chow.pomegranate.qr_clipboard_no_image
+import com.chow.pomegranate.qr_image_read_failed
 import com.chow.pomegranate.qr_no_code_found
 import com.chow.pomegranate.qr_paste_image
 import com.chow.pomegranate.qr_pick_image
 import com.chow.pomegranate.qr_scan
+import com.chow.pomegranate.ui.component.LocalSnackbarHostState
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
@@ -49,84 +50,53 @@ import java.awt.datatransfer.DataFlavor
  * 桌面端没有可靠的相机能力，改成从图片识别：选图片文件或粘贴剪贴板里的图片。
  */
 @Composable
-actual fun QrScannerDialog(
+actual fun QrScannerScreen(
     onResult: (String) -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-
-    // 识别失败时的提示
-    var message by remember { mutableStateOf<String?>(null) }
-
+    val snackbar = LocalSnackbarHostState.current
     val noCodeMessage = stringResource(Res.string.qr_no_code_found)
     val noImageMessage = stringResource(Res.string.qr_clipboard_no_image)
+    val readFailedMessage = stringResource(Res.string.qr_image_read_failed)
 
-    /** 解码并回调。 */
-    fun decode(image: BufferedImage?) {
-        if (image == null) {
-            message = noCodeMessage
-            return
-        }
-
-        scope.launch {
-            // 解码比较耗时，放到后台线程
-            val text = withContext(Dispatchers.Default) { decodeQrCode(image) }
-
-            if (text != null) onResult(text) else message = noCodeMessage
-        }
+    suspend fun decode(image: BufferedImage) {
+        val value = withContext(Dispatchers.Default) { decodeQrCode(image) }
+        if (value != null) onResult(value) else snackbar.showSnackbar(noCodeMessage)
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Surface(
+            modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
             shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(Res.string.qr_scan),
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-
-                // 选择图片文件
+            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(Res.string.qr_scan), style = MaterialTheme.typography.headlineSmall)
                 TextButton(
                     onClick = {
-                        message = null
-                        decode(readImageFile())
+                        val file = chooseImageFile()
+                        if (file != null) scope.launch {
+                            val image = withContext(Dispatchers.IO) { runCatching { ImageIO.read(file) }.getOrNull() }
+                            if (image == null) snackbar.showSnackbar(readFailedMessage) else decode(image)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(Res.string.qr_pick_image))
                 }
-
-                // 粘贴剪贴板里的图片
                 TextButton(
                     onClick = {
-                        message = null
-                        val image = readClipboardImage()
-
-                        if (image == null) message = noImageMessage else decode(image)
+                        scope.launch {
+                            val image = readClipboardImage()
+                            if (image == null) snackbar.showSnackbar(noImageMessage) else decode(image)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(Res.string.qr_paste_image))
                 }
-
-                // 提示
-                message?.let {
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+                TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(Res.string.cancel))
                 }
             }
@@ -134,17 +104,17 @@ actual fun QrScannerDialog(
     }
 }
 
-/** 弹出系统文件选择框读取图片。 */
-private fun readImageFile(): BufferedImage? {
-    val dialog = FileDialog(null as Frame?, "选择二维码图片", FileDialog.LOAD).apply {
-        setFilenameFilter { _, name -> name.isImageFile() }
-        isVisible = true
+private fun chooseImageFile(): File? {
+    val dialog = FileDialog(null as Frame?, "选择二维码图片", FileDialog.LOAD)
+    return try {
+        dialog.setFilenameFilter { _, name -> name.isImageFile() }
+        dialog.isVisible = true
+        val directory = dialog.directory ?: return null
+        val file = dialog.file ?: return null
+        File(directory, file)
+    } finally {
+        dialog.dispose()
     }
-
-    val directory = dialog.directory ?: return null
-    val file = dialog.file ?: return null
-
-    return runCatching { ImageIO.read(File(directory, file)) }.getOrNull()
 }
 
 /** 读取剪贴板里的图片。 */

@@ -9,10 +9,10 @@ import androidx.compose.runtime.Composable
  * 桌面端从图片识别（选择图片或粘贴剪贴板图片）。
  *
  * @param onResult 识别成功后回调二维码内容
- * @param onDismiss 取消时回调
+ * @param onBack 退出扫码页面时回调
  */
 @Composable
-expect fun QrScannerDialog(
+expect fun QrScannerScreen(
     onResult: (String) -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
 )

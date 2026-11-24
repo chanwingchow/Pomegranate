@@ -143,10 +143,12 @@
     <string name="qr_need_camera">需要相机权限才能扫码</string>
     <string name="qr_pick_image">选择图片</string>
     <string name="qr_paste_image">粘贴图片</string>
-    <string name="qr_no_code_found">没能在图片里找到二维码</string>
+    <string name="qr_no_code_found">没有识别到二维码，请试试更清晰的图片。</string>
+    <string name="qr_image_read_failed">无法读取这张图片，请换一张再试。</string>
     <string name="qr_clipboard_no_image">剪贴板里没有图片</string>
     <string name="otp_advanced">高级选项</string>
     <string name="otp_import_empty">剪贴板里没有可用的 otpauth:// 链接</string>
+    <string name="otp_import_invalid_qr">此二维码无法用于添加 OTP 账户。</string>
     <string name="otp_import_algorithm">该链接的哈希算法暂不支持（仅支持 SHA1）</string>
     <string name="otp_secret_invalid">密钥不是合法的 Base32</string>
     <string name="otp_digits">位数</string>

@@ -59,7 +59,7 @@ dependencies@android:
   - $libs.androidx.camera.camera2
   - $libs.androidx.camera.lifecycle
   - $libs.androidx.camera.view
-  - $libs.mlkit.barcode
+  - $libs.zxing.core
   # The IDE's catalog resolver drops @aar; keep this artifact selector explicit.
   - cz.adaptech.tesseract4android:tesseract4android:4.9.0@aar
 

@@ -17,12 +17,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.scene.DialogSceneStrategy
 import com.chow.pomegranate.*
 import com.chow.pomegranate.session.Account
 import com.chow.pomegranate.session.LoginTarget
 import com.chow.pomegranate.session.SessionManager
 import com.chow.pomegranate.ui.component.*
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import com.chow.pomegranate.repository.AccountNicknameRepository
@@ -39,7 +39,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 fun EntryProviderScope<NavKey>.accountEntry() {
     entry<AccountRoute> { AccountScreen() }
-    entry<AccountConfirmRoute>(metadata = DialogSceneStrategy.dialog()) { AccountConfirmDialog(it) }
+    entry<AccountConfirmRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { AccountConfirmDialog(it) }
     entry<AccountNicknameRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { AccountNicknameSheet(it) }
 }
 

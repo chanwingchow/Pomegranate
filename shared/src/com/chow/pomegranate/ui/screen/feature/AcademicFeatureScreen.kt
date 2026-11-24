@@ -23,9 +23,9 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.result.ResultEffect
 import androidx.compose.ui.text.style.TextOverflow
 import com.chow.pomegranate.repository.toStudyCatalog
-import androidx.navigation3.scene.DialogSceneStrategy
 import com.chow.pomegranate.repository.AcademicFeature
 import com.chow.pomegranate.ui.component.*
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.navigation.DialogListDetailSceneStrategy
 import com.chow.pomegranate.ui.navigation.FullWidthOverviewSceneStrategy
@@ -50,11 +50,11 @@ import org.koin.compose.viewmodel.koinViewModel
 fun EntryProviderScope<NavKey>.academicFeatureEntries() {
     val listMetadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { StudyDetailPlaceholder() })
     entry<CourseSelectionRoute>(metadata = listMetadata + FullWidthOverviewSceneStrategy.metadata()) { CourseSelectionScreen() }
-    entry<CourseOperationRoute>(metadata = DialogSceneStrategy.dialog()) { CourseOperationDialog(it) }
+    entry<CourseOperationRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { CourseOperationDialog(it) }
     entry<SchoolTimetableFiltersRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { SchoolTimetableFiltersSheet(it) }
     entry<SchoolSemesterRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { SchoolSemesterSheet(it) }
     entry<SchoolTimetableDataRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { SchoolTimetableDataSheet() }
-    entry<SchoolTimetableDeleteRoute>(metadata = DialogSceneStrategy.dialog()) { SchoolTimetableDeleteDialog(it) }
+    entry<SchoolTimetableDeleteRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { SchoolTimetableDeleteDialog(it) }
     entry<CourseBasketRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { CourseBasketSheet(it) }
     entry<CourseFiltersRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { CourseFiltersSheet(it) }
     entry<CourseInstructionsRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { CourseInstructionsSheet(it) }

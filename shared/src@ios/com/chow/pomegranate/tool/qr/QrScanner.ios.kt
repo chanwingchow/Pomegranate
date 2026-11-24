@@ -2,6 +2,11 @@ package com.chow.pomegranate.tool.qr
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -16,6 +21,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,8 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.qr_need_camera
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -52,11 +57,13 @@ import platform.UIKit.UIView
 import platform.darwin.NSObject
 import platform.darwin.dispatch_get_main_queue
 import kotlin.coroutines.resume
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material3.Button
+import com.chow.pomegranate.qr_image_read_failed
 import com.chow.pomegranate.qr_no_code_found
 import com.chow.pomegranate.qr_pick_image
+import com.chow.pomegranate.ui.component.LocalSnackbarHostState
+import kotlinx.coroutines.launch
 import platform.UIKit.UIApplication
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePickerController
@@ -67,99 +74,63 @@ import platform.Vision.VNBarcodeObservation
 import platform.Vision.VNBarcodeSymbologyQR
 import platform.Vision.VNDetectBarcodesRequest
 import platform.Vision.VNImageRequestHandler
-import androidx.compose.foundation.layout.Column
 import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.UIImagePickerControllerSourceType
 
 /** 相机扫码界面。 */
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-actual fun QrScannerDialog(
+actual fun QrScannerScreen(
     onResult: (String) -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
 ) {
     // 相机权限
     var granted by remember { mutableStateOf(hasCameraPermission()) }
 
-    // 相册图片识别失败时的提示
-    var message by remember { mutableStateOf<String?>(null) }
+    val snackbar = LocalSnackbarHostState.current
+    val scope = rememberCoroutineScope()
     val noCodeMessage = stringResource(Res.string.qr_no_code_found)
+    val readFailedMessage = stringResource(Res.string.qr_image_read_failed)
+    val imagePicked by rememberUpdatedState<(UIImage?) -> Unit> { image ->
+        val value = image?.let(::decodeQrFromImage)
+        if (value != null) onResult(value)
+        else scope.launch { snackbar.showSnackbar(if (image == null) readFailedMessage else noCodeMessage) }
+    }
 
     LaunchedEffect(granted) {
         if (!granted) granted = requestCameraPermission()
     }
 
-    // 相册选择代理
-    val pickerDelegate = remember {
-        ImagePickerDelegate { image ->
-            val value = image?.let(::decodeQrFromImage)
+    val pickerDelegate = remember { ImagePickerDelegate { imagePicked(it) } }
 
-            if (value != null) onResult(value) else message = noCodeMessage
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        if (granted) {
+            CameraPreview(onResult = onResult)
+        } else {
+            Text(
+                text = stringResource(Res.string.qr_need_camera),
+                modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge,
+            )
         }
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.End))
+                .padding(16.dp),
         ) {
-            if (granted) {
-                CameraPreview(onResult = onResult)
-            } else {
-                Text(
-                    text = stringResource(Res.string.qr_need_camera),
-                    modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-
-            // 关闭
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
-            ) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = null,
-                    tint = Color.White,
-                )
-            }
-
-            Column(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // 识别失败提示
-                message?.let {
-                    Text(
-                        text = it,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
-                // 从相册选择
-                Button(
-                    onClick = {
-                        message = null
-                        presentImagePicker(pickerDelegate)
-                    },
-                ) {
-                    Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
-                    Text(
-                        text = stringResource(Res.string.qr_pick_image),
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-                }
-            }
+            Icon(Icons.Rounded.Close, contentDescription = null, tint = Color.White)
+        }
+        Button(
+            onClick = { presentImagePicker(pickerDelegate) },
+            modifier = Modifier.align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+                .padding(24.dp),
+        ) {
+            Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
+            Text(stringResource(Res.string.qr_pick_image), Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -170,14 +141,13 @@ actual fun QrScannerDialog(
 private fun CameraPreview(
     onResult: (String) -> Unit,
 ) {
-    // 只回调第一次识别结果
-    var handled by remember { mutableStateOf(false) }
-
+    val currentOnResult by rememberUpdatedState(onResult)
     val delegate = remember {
+        var lastValue: String? = null
         QrMetadataDelegate { value ->
-            if (!handled) {
-                handled = true
-                onResult(value)
+            if (value != lastValue) {
+                lastValue = value
+                currentOnResult(value)
             }
         }
     }
@@ -309,15 +279,12 @@ private class ImagePickerDelegate(
         picker: UIImagePickerController,
         didFinishPickingMediaWithInfo: Map<Any?, *>,
     ) {
-        picker.dismissViewControllerAnimated(true, null)
-
-        onPicked(didFinishPickingMediaWithInfo[UIImagePickerControllerOriginalImage] as? UIImage)
+        val image = didFinishPickingMediaWithInfo[UIImagePickerControllerOriginalImage] as? UIImage
+        picker.dismissViewControllerAnimated(true) { onPicked(image) }
     }
 
     override fun imagePickerControllerDidCancel(picker: UIImagePickerController) {
         picker.dismissViewControllerAnimated(true, null)
-
-        onPicked(null)
     }
 }
 

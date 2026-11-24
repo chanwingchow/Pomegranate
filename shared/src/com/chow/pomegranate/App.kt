@@ -47,6 +47,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.DialogSceneStrategy
 import com.chow.pomegranate.ui.navigation.FullWidthOverviewSceneStrategy
 import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.chow.pomegranate.di.AppModule
@@ -111,6 +112,7 @@ import com.chow.pomegranate.ui.screen.otp.OtpRoute
 import com.chow.pomegranate.ui.screen.otp.otpEntry
 import com.chow.pomegranate.ui.screen.otp.OtpDeleteRoute
 import com.chow.pomegranate.ui.screen.otp.OtpEditorRoute
+import com.chow.pomegranate.ui.screen.otp.OtpScanRoute
 import com.chow.pomegranate.ui.screen.settings.SettingsRoute
 import com.chow.pomegranate.ui.screen.settings.settingsEntry
 import com.chow.pomegranate.ui.screen.transcript.TranscriptDetailRoute
@@ -192,6 +194,7 @@ internal val savedStateConfiguration = SavedStateConfiguration {
             subclass(FeatureDetailRoute::class)
             subclass(OtpDeleteRoute::class)
             subclass(OtpEditorRoute::class)
+            subclass(OtpScanRoute::class)
             subclass(AccountConfirmRoute::class)
             subclass(AccountRoute::class)
             subclass(AccountNicknameRoute::class)
@@ -240,6 +243,7 @@ fun App(
             // 弹窗场景必须排在非覆盖场景之前
             val timetableSceneStrategy = rememberTimetableCourseSceneStrategy()
             val dialogSceneStrategy = remember { DialogSceneStrategy<NavKey>() }
+            val alertDialogSceneStrategy = remember { AlertDialogSceneStrategy<NavKey>() }
             val bottomSheetSceneStrategy = remember { BottomSheetSceneStrategy<NavKey>() }
             // 列表-详情自适应：宽屏并排，窄屏单栏
             val listDetailSceneStrategy = rememberListDetailSceneStrategy<NavKey>()
@@ -290,7 +294,10 @@ fun App(
                         popTransitionSpec = { fadeIn() togetherWith fadeOut() },
                         backStack = backStack,
                         onBack = { backStack.popDestination() },
-                        sceneStrategies = listOf(timetableSceneStrategy, bottomSheetSceneStrategy, dialogListDetailSceneStrategy, dialogSceneStrategy, overviewSceneStrategy, listDetailSceneStrategy),
+                        sceneStrategies = listOf(
+                            timetableSceneStrategy, bottomSheetSceneStrategy, alertDialogSceneStrategy,
+                            dialogListDetailSceneStrategy, dialogSceneStrategy, overviewSceneStrategy, listDetailSceneStrategy,
+                        ),
                         entryDecorators = listOf(
                             saveableEntryDecorator,
                             viewModelEntryDecorator,

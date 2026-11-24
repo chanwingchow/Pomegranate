@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.compose.ui.window.DialogProperties
 import com.chow.pomegranate.ui.component.BackToTopButton
 import com.chow.pomegranate.ui.component.LocalAppCoroutineScope
@@ -92,6 +91,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -124,11 +124,16 @@ import com.chow.pomegranate.otp_remaining_seconds
 import com.chow.pomegranate.otp_select_accounts
 import com.chow.pomegranate.otp_select_all
 import com.chow.pomegranate.otp_selected_count
+import com.chow.pomegranate.otp_import_algorithm
+import com.chow.pomegranate.otp_import_invalid_qr
 import com.chow.pomegranate.save
 import com.chow.pomegranate.tool.otp.TotpGenerator
+import com.chow.pomegranate.tool.otp.parseOtpAuthUri
+import com.chow.pomegranate.tool.qr.QrScannerScreen
 import com.chow.pomegranate.ui.component.BackIconButton
 import com.chow.pomegranate.ui.component.LocalSnackbarHostState
 import com.chow.pomegranate.ui.component.PomTopAppBar
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.theme.DEFAULT_PRIMARY_COLOR
@@ -146,7 +151,8 @@ import org.koin.compose.viewmodel.koinViewModel
 /** 注册 OTP 页面与编辑弹窗。 */
 fun EntryProviderScope<NavKey>.otpEntry() {
     entry<OtpRoute> { OtpScreen() }
-    entry<OtpDeleteRoute>(metadata = DialogSceneStrategy.dialog()) { OtpDeleteDialog(it) }
+    entry<OtpScanRoute> { OtpScanScreen() }
+    entry<OtpDeleteRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { OtpDeleteDialog(it) }
     entry<OtpEditorRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { route ->
         OtpEditorSheet(route.accountId)
     }
@@ -159,6 +165,36 @@ data object OtpRoute : NavKey
 /** OTP 新增或编辑弹窗路由；空 ID 表示新增。 */
 @Serializable
 data class OtpEditorRoute(val accountId: Long? = null) : NavKey
+
+@Serializable
+internal data object OtpScanRoute : NavKey
+
+@Composable
+private fun OtpScanScreen() {
+    val backStack = LocalBackStack.current
+    val results = LocalResultEventBus.current
+    val snackbar = LocalSnackbarHostState.current
+    val scope = rememberCoroutineScope()
+    val invalidQrMessage = stringResource(Res.string.otp_import_invalid_qr)
+    val algorithmMessage = stringResource(Res.string.otp_import_algorithm)
+
+    QrScannerScreen(
+        onResult = { value ->
+            if (backStack.lastOrNull() == OtpScanRoute) {
+                val account = parseOtpAuthUri(value)
+                when {
+                    account == null -> scope.launch { snackbar.showSnackbar(invalidQrMessage) }
+                    account.algorithm != "SHA1" -> scope.launch { snackbar.showSnackbar(algorithmMessage) }
+                    else -> {
+                        results.sendResult(account)
+                        backStack.removeLastOrNull()
+                    }
+                }
+            }
+        },
+        onBack = { if (backStack.lastOrNull() == OtpScanRoute) backStack.removeLastOrNull() },
+    )
+}
 
 /** OTP 页。 */
 @Composable
