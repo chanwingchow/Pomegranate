@@ -102,7 +102,7 @@ def main():
         subject = re.sub(r'([\\`*_[\]])', r'\\\1', subject)
         notes.append(f'- {subject} ([{sha[:7]}]({url}/commit/{sha}))')
     notes += ['', '</details>', '', '## 下载说明', '',
-              '- Android：`android-release.apk` 为正式签名安装包。',
+              '- Android：`android-arm64-v8a-release.apk` 为正式签名安装包，仅适用于 ARM 64 位 Android 设备。',
               '- Windows：`windows-x64.msi` 为安装包；`windows-x64-portable.zip` 为免安装包，解压后运行目录中的 EXE，请保留所有附带文件。',
               '- macOS：`macos-arm64.dmg`，适用于 Apple Silicon；当前未配置 Developer ID 签名和公证。',
               '- Linux：`linux-x64.deb`。',

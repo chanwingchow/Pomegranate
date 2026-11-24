@@ -45,7 +45,7 @@
 
 ### Android
 
-- <code>Pomegranate-x.x.x-<strong>android</strong>-release.apk</code>：正式签名安装包。
+- `Pomegranate-x.x.x-android-arm64-v8a-release.apk` 是正式签名安装包，仅适用于 ARM 64 位 Android 设备，包括大多数手机和平板。
 
 ### Desktop
 

@@ -50,7 +50,7 @@ jobs:
           # SDK 37 is published as android-37.0; build tools have an independent version.
           if [[ "$SDK_VERSION" -ge 37 ]]; then SDK_PLATFORM="${SDK_VERSION}.0"; else SDK_PLATFORM="$SDK_VERSION"; fi
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-$SDK_PLATFORM" "build-tools;36.0.0"
-      - name: Build Android APK
+      - name: Build arm64 Android APK
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -64,7 +64,7 @@ jobs:
           mkdir -p artifacts
           export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
-          python .github/scripts/configure_android_signing.py
+          python .github/scripts/configure_android_release.py
           ./kotlin build -m androidApp -v release
           python .github/scripts/collect_android_apk.py
       - name: Upload APK

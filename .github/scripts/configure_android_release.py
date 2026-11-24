@@ -1,4 +1,4 @@
-"""Write ephemeral Java signing properties; never print signing credentials."""
+"""Configure the signed arm64 Android APK in the CI checkout."""
 import os
 from pathlib import Path
 
@@ -24,6 +24,13 @@ def property_value(value):
 
 
 if __name__ == '__main__':
+    module = Path('androidApp/module.yaml')
+    text = module.read_text()
+    if text.count('\n  android:\n') != 1:
+        raise ValueError('Expected one Android settings block')
+    if '\n    signing:' in text or '\n    abiFilters:' in text:
+        raise ValueError('Android signing or ABI filters are already configured')
+
     values = {
         'storeFile': str(Path(os.environ['ANDROID_KEYSTORE_PATH']).resolve()),
         'storePassword': os.environ['ANDROID_KEYSTORE_PASSWORD'],
@@ -33,8 +40,8 @@ if __name__ == '__main__':
     path = Path('androidApp/keystore.properties')
     path.write_text(''.join(f'{key}={property_value(value)}\n' for key, value in values.items()), encoding='ascii')
     path.chmod(0o600)
-    module = Path('androidApp/module.yaml')
-    text = module.read_text()
-    if '\n    signing:' in text:
-        raise ValueError('Signing is already configured; refusing to overwrite it')
-    module.write_text(text.replace('  android:\n', '  android:\n    signing:\n      enabled: true\n', 1))
+    module.write_text(text.replace(
+        '\n  android:\n',
+        '\n  android:\n    abiFilters: [arm64-v8a]\n    signing:\n      enabled: true\n',
+        1,
+    ))
