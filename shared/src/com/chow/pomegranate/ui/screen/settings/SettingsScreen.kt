@@ -1,102 +1,94 @@
 package com.chow.pomegranate.ui.screen.settings
 
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.twotone.Logout
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.rounded.Science
-import androidx.compose.material.icons.rounded.Language
-import androidx.compose.material.icons.rounded.Domain
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.toggleableState
-import androidx.compose.ui.state.ToggleableState
-import com.chow.pomegranate.ui.component.PomSettingRow
-import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
-import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
+import androidx.compose.material.icons.rounded.Domain
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.twotone.AutoMode
 import androidx.compose.material.icons.twotone.DarkMode
 import androidx.compose.material.icons.twotone.LightMode
-import androidx.compose.material3.*
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.navigation3.runtime.result.ResultEffect
-import androidx.navigation3.runtime.result.LocalResultEventBus
-import kotlin.math.roundToInt
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.result.LocalResultEventBus
+import androidx.navigation3.runtime.result.ResultEffect
 import com.chow.pomegranate.BuildConfig
 import com.chow.pomegranate.Res
 import com.chow.pomegranate.app_name
 import com.chow.pomegranate.auto
 import com.chow.pomegranate.dark
-import com.chow.pomegranate.dev_by_chow
 import com.chow.pomegranate.demo_mode
+import com.chow.pomegranate.dev_by_chow
 import com.chow.pomegranate.ic_logo
 import com.chow.pomegranate.light
 import com.chow.pomegranate.logo
-import com.chow.pomegranate.session.SessionManager
+import com.chow.pomegranate.network.WebVpnSession
+import com.chow.pomegranate.service.update.PROJECT_URL
+import com.chow.pomegranate.service.update.UpdateInstaller
 import com.chow.pomegranate.settings
 import com.chow.pomegranate.theme_mode
-import com.chow.pomegranate.tips
 import com.chow.pomegranate.ui.component.BackIconButton
-import com.chow.pomegranate.ui.component.PomTooltipBox
+import com.chow.pomegranate.ui.component.PomSettingRow
 import com.chow.pomegranate.ui.component.PomTopAppBar
 import com.chow.pomegranate.ui.component.rememberCurrentDate
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
+import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
+import com.chow.pomegranate.ui.screen.login.ConnectionSettingsRoute
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
 import com.chow.pomegranate.ui.theme.ThemeMode
 import com.chow.pomegranate.week
@@ -104,20 +96,21 @@ import com.chow.pomegranate.week_tooltip
 import com.skydoves.cloudy.cloudy
 import com.skydoves.cloudy.rememberSky
 import com.skydoves.cloudy.sky
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-
-/** 项目仓库地址。 */
-private const val REPOSITORY_URL = "https://github.com/chanwingchow/Pomegranate"
+import kotlin.math.roundToInt
 
 /**
  * 设置页导航入口。
  */
-fun EntryProviderScope<NavKey>.settingsEntry() {
+internal fun EntryProviderScope<NavKey>.settingsEntry(updateInstaller: UpdateInstaller?) {
     entry<SettingsRoute> { SettingsScreen() }
+    entry<AppUpdateRoute>(metadata = AlertDialogSceneStrategy.alertDialog()) { AppUpdateDialog(it, updateInstaller) }
+    entry<VersionHistoryRoute> { VersionHistoryScreen() }
+    entry<VersionDetailsRoute> { VersionDetailsScreen(it.tag) }
     entry<WeekSettingRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { WeekSettingSheet(it) }
     entry<ClassroomRulesRoute> { ClassroomRulesScreen() }
     entry<ClassroomRuleEditorRoute>(metadata = BottomSheetSceneStrategy.bottomSheet()) { ClassroomRuleEditorSheet(it) }
@@ -143,8 +136,17 @@ private data class WeekSelection(val week: Int)
 private fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
+    val updates = LocalAppUpdateViewModel.current
+    val latest = updates?.latest?.collectAsState()?.value
+    val backStack = LocalBackStack.current
     SettingsContent(
         viewModel = viewModel,
+        onUpdate = if (latest != null) {
+            { if (backStack.lastOrNull() !is AppUpdateRoute) backStack.add(AppUpdateRoute()) }
+        } else null,
+        startupPromptsEnabled = updates?.startupPromptsEnabled?.collectAsState()?.value ?: true,
+        startupPromptsError = updates?.startupPromptsError?.collectAsState()?.value,
+        onStartupPromptsChange = updates?.let { it::setStartupPromptsEnabled },
     )
 }
 
@@ -164,6 +166,10 @@ private fun SettingsContentPreview() {
 private fun SettingsContent(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel? = null,
+    onUpdate: (() -> Unit)? = null,
+    startupPromptsEnabled: Boolean = true,
+    startupPromptsError: String? = null,
+    onStartupPromptsChange: ((Boolean) -> Unit)? = null,
 ) {
     val backStack = LocalBackStack.current
     if (viewModel != null) ResultEffect<WeekSelection> { viewModel.setWeek(it.week) }
@@ -184,7 +190,7 @@ private fun SettingsContent(
     val demoMode = viewModel?.demoMode?.collectAsState()?.value == true
     val demoModeLabel = stringResource(Res.string.demo_mode)
     val demoModeError = viewModel?.demoModeError?.collectAsState()?.value
-    val connection = if (viewModel != null) org.koin.compose.koinInject<com.chow.pomegranate.network.WebVpnSession>() else null
+    val connection = if (viewModel != null) koinInject<WebVpnSession>() else null
     val connectionState = connection?.state?.collectAsState()?.value
     LaunchedEffect(connection) { connection?.initialize() }
 
@@ -207,10 +213,8 @@ private fun SettingsContent(
             item {
                 // 应用信息卡片
                 AppCard(
-                    onClick = {
-                        // 打开项目仓库
-                        uriHandler.openUri(REPOSITORY_URL)
-                    },
+                    onOpenProject = { uriHandler.openUri(PROJECT_URL) },
+                    onUpdate = onUpdate,
                 )
             }
 
@@ -224,6 +228,10 @@ private fun SettingsContent(
             }
 
             item {
+                PomSettingRow("版本列表", Icons.Outlined.History, 0, onClick = { backStack.add(VersionHistoryRoute) })
+            }
+
+            item {
                 // 周次设置
                 PomSettingRow(stringResource(Res.string.week), Icons.Rounded.CalendarMonth, 2,
                     trailing = { Text("第 $week 周", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) },
@@ -233,12 +241,27 @@ private fun SettingsContent(
             item {
                 PomSettingRow("连接方式", Icons.Rounded.Language, 3,
                     trailing = { Text(connectionState?.policy?.label ?: "自动", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) },
-                    onClick = { backStack.add(com.chow.pomegranate.ui.screen.login.ConnectionSettingsRoute) })
+                    onClick = { backStack.add(ConnectionSettingsRoute) })
             }
 
             item {
                 PomSettingRow("名称替换", Icons.Rounded.Domain, 4,
                     onClick = { backStack.add(ClassroomRulesRoute) })
+            }
+
+            if (onStartupPromptsChange != null) item {
+                PomSettingRow(
+                    "启动时提示更新",
+                    Icons.Outlined.Notifications,
+                    0,
+                    modifier = Modifier.semantics {
+                        role = Role.Switch
+                        toggleableState = ToggleableState(startupPromptsEnabled)
+                    },
+                    trailing = { Switch(checked = startupPromptsEnabled, onCheckedChange = null) },
+                    onClick = { onStartupPromptsChange(!startupPromptsEnabled) },
+                )
+                startupPromptsError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
 
             item {
@@ -285,11 +308,12 @@ private fun TopBar(
  */
 @Composable
 private fun AppCard(
-    onClick: () -> Unit,
+    onOpenProject: () -> Unit,
+    onUpdate: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     ElevatedCard(
-        onClick = onClick,
+        onClick = onUpdate ?: onOpenProject,
         modifier = modifier,
     ) {
         Column(
@@ -322,19 +346,32 @@ private fun AppCard(
                     )
                 }
 
-                // 版本号
-                Text(
-                    BuildConfig.versionName,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    if (onUpdate != null) {
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ) {
+                            Text("有新版本", modifier = Modifier.padding(horizontal = 4.dp))
+                        }
+                    }
+                    Text(
+                        BuildConfig.versionName,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
             // GitHub 仓库链接
             Text(
-                REPOSITORY_URL,
+                PROJECT_URL,
+                modifier = if (onUpdate != null) Modifier.clickable(onClick = onOpenProject) else Modifier,
                 color = MaterialTheme.colorScheme.outlineVariant,
                 style = MaterialTheme.typography.labelSmall,
             )
@@ -423,7 +460,7 @@ private fun WeekSettingSheet(route: WeekSettingRoute) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             FilledTonalIconButton(onClick = { draft-- }, enabled = draft > 0) { Icon(Icons.Rounded.Remove, "上一周") }
             Text("第 $draft 周", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
             FilledTonalIconButton(onClick = { draft++ }, enabled = draft < 20) { Icon(Icons.Rounded.Add, "下一周") }
         }
         Column {

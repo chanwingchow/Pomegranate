@@ -7,139 +7,149 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import com.chow.pomegranate.ui.component.AppSnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import com.chow.pomegranate.ui.component.LocalAppCoroutineScope
-import androidx.compose.runtime.key
-import com.chow.pomegranate.ui.component.PomLoadingIndicator
-import com.chow.pomegranate.repository.DemoModeRepository
-import com.chow.pomegranate.repository.ClassroomReplacementRepository
-import com.chow.pomegranate.repository.ClassroomReplacements
-import com.chow.pomegranate.ui.component.LocalClassroomReplacements
-import com.chow.pomegranate.ui.component.LocalCourseNameReplacements
-import com.chow.pomegranate.repository.NameReplacementTarget
-import com.chow.pomegranate.ui.component.DemoModeBadge
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreProvider
-import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.scene.DialogSceneStrategy
-import com.chow.pomegranate.ui.navigation.FullWidthOverviewSceneStrategy
-import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
-import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.chow.pomegranate.di.AppModule
+import com.chow.pomegranate.repository.ClassroomReplacementRepository
+import com.chow.pomegranate.repository.ClassroomReplacements
+import com.chow.pomegranate.repository.DemoModeRepository
+import com.chow.pomegranate.repository.NameReplacementTarget
+import com.chow.pomegranate.service.update.rememberUpdateInstaller
+import com.chow.pomegranate.session.SessionManager
+import com.chow.pomegranate.session.SessionState
+import com.chow.pomegranate.ui.component.AdaptiveStudyDetailRoute
+import com.chow.pomegranate.ui.component.AppSnackbarHost
+import com.chow.pomegranate.ui.component.DemoModeBadge
+import com.chow.pomegranate.ui.component.LocalAppCoroutineScope
+import com.chow.pomegranate.ui.component.LocalClassroomReplacements
+import com.chow.pomegranate.ui.component.LocalCourseNameReplacements
 import com.chow.pomegranate.ui.component.LocalSnackbarHostState
+import com.chow.pomegranate.ui.component.PomLoadingIndicator
+import com.chow.pomegranate.ui.component.StudyDetailRoute
+import com.chow.pomegranate.ui.navigation.AlertDialogSceneStrategy
+import com.chow.pomegranate.ui.navigation.BottomSheetSceneStrategy
+import com.chow.pomegranate.ui.navigation.DialogListDetailSceneStrategy
+import com.chow.pomegranate.ui.navigation.FullWidthOverviewSceneStrategy
 import com.chow.pomegranate.ui.navigation.LocalBackStack
 import com.chow.pomegranate.ui.navigation.popDestination
 import com.chow.pomegranate.ui.screen.account.AccountConfirmRoute
-import com.chow.pomegranate.ui.screen.account.AccountRoute
 import com.chow.pomegranate.ui.screen.account.AccountNicknameRoute
+import com.chow.pomegranate.ui.screen.account.AccountRoute
 import com.chow.pomegranate.ui.screen.account.accountEntry
+import com.chow.pomegranate.ui.screen.cet.CetNoteRoute
 import com.chow.pomegranate.ui.screen.cet.CetRoute
 import com.chow.pomegranate.ui.screen.cet.cetEntry
 import com.chow.pomegranate.ui.screen.contact.ContactRoute
 import com.chow.pomegranate.ui.screen.contact.contactEntry
 import com.chow.pomegranate.ui.screen.exam.ExamRoute
 import com.chow.pomegranate.ui.screen.exam.examEntry
-import com.chow.pomegranate.ui.screen.feature.AcademicProgressRoute
-import com.chow.pomegranate.ui.screen.feature.AcademicProgramRoute
 import com.chow.pomegranate.ui.screen.feature.AcademicPlanRoute
-import com.chow.pomegranate.ui.screen.feature.CourseSelectionRoute
-import com.chow.pomegranate.ui.screen.feature.CourseOperationRoute
+import com.chow.pomegranate.ui.screen.feature.AcademicProgramRoute
+import com.chow.pomegranate.ui.screen.feature.AcademicProgressRoute
 import com.chow.pomegranate.ui.screen.feature.CourseBasketRoute
 import com.chow.pomegranate.ui.screen.feature.CourseFiltersRoute
-import com.chow.pomegranate.ui.screen.feature.SchoolTimetableFiltersRoute
+import com.chow.pomegranate.ui.screen.feature.CourseInstructionsRoute
+import com.chow.pomegranate.ui.screen.feature.CourseOperationRoute
+import com.chow.pomegranate.ui.screen.feature.CourseSelectionRoute
+import com.chow.pomegranate.ui.screen.feature.CourseTimetableRoute
+import com.chow.pomegranate.ui.screen.feature.ExtracurricularRoute
+import com.chow.pomegranate.ui.screen.feature.FeatureDetailRoute
 import com.chow.pomegranate.ui.screen.feature.SchoolSemesterRoute
 import com.chow.pomegranate.ui.screen.feature.SchoolTimetableDataRoute
 import com.chow.pomegranate.ui.screen.feature.SchoolTimetableDeleteRoute
+import com.chow.pomegranate.ui.screen.feature.SchoolTimetableFiltersRoute
 import com.chow.pomegranate.ui.screen.feature.TeacherSearchRoute
-import com.chow.pomegranate.ui.screen.settings.WeekSettingRoute
-import com.chow.pomegranate.ui.screen.settings.ClassroomRulesRoute
-import com.chow.pomegranate.ui.screen.settings.ClassroomRuleEditorRoute
-import com.chow.pomegranate.ui.screen.settings.ClassroomRuleDeleteRoute
-import com.chow.pomegranate.ui.screen.settings.ClassroomBuiltinRulesRoute
-import com.chow.pomegranate.ui.screen.main.timetable.TimetableNotesRoute
-import com.chow.pomegranate.ui.screen.main.timetable.TimetableCourseRoute
-import com.chow.pomegranate.ui.screen.main.timetable.TimetableWeekRoute
-import com.chow.pomegranate.ui.screen.main.timetable.TimetableDateRoute
-import com.chow.pomegranate.ui.screen.main.timetable.TimetableEditRoute
-import com.chow.pomegranate.ui.screen.main.timetable.rememberTimetableCourseSceneStrategy
-import com.chow.pomegranate.ui.screen.feature.CourseInstructionsRoute
-import com.chow.pomegranate.ui.screen.cet.CetNoteRoute
-import com.chow.pomegranate.ui.screen.login.SecondClassLoginRoute
-import com.chow.pomegranate.ui.screen.feature.CourseTimetableRoute
-import com.chow.pomegranate.ui.screen.feature.ExtracurricularRoute
-import com.chow.pomegranate.ui.component.StudyDetailRoute
-import com.chow.pomegranate.ui.screen.feature.FeatureDetailRoute
 import com.chow.pomegranate.ui.screen.feature.TeachersRoute
 import com.chow.pomegranate.ui.screen.feature.academicFeatureEntries
 import com.chow.pomegranate.ui.screen.feature.academicProgramEntry
+import com.chow.pomegranate.ui.screen.login.ConnectionSettingsRoute
 import com.chow.pomegranate.ui.screen.login.LoginErrorRoute
 import com.chow.pomegranate.ui.screen.login.LoginRoute
-import com.chow.pomegranate.ui.screen.login.ConnectionSettingsRoute
+import com.chow.pomegranate.ui.screen.login.SecondClassLoginRoute
 import com.chow.pomegranate.ui.screen.login.loginEntry
-import com.chow.pomegranate.ui.screen.main.me.ThemeColorRoute
-import com.chow.pomegranate.ui.screen.main.me.AvatarActionsRoute
-import com.chow.pomegranate.ui.screen.main.me.meDialogEntries
 import com.chow.pomegranate.ui.screen.main.MainRoute
 import com.chow.pomegranate.ui.screen.main.mainEntry
+import com.chow.pomegranate.ui.screen.main.me.AvatarActionsRoute
+import com.chow.pomegranate.ui.screen.main.me.ThemeColorRoute
+import com.chow.pomegranate.ui.screen.main.me.meDialogEntries
+import com.chow.pomegranate.ui.screen.main.timetable.TimetableCourseRoute
+import com.chow.pomegranate.ui.screen.main.timetable.TimetableDateRoute
+import com.chow.pomegranate.ui.screen.main.timetable.TimetableEditRoute
+import com.chow.pomegranate.ui.screen.main.timetable.TimetableNotesRoute
+import com.chow.pomegranate.ui.screen.main.timetable.TimetableWeekRoute
+import com.chow.pomegranate.ui.screen.main.timetable.rememberTimetableCourseSceneStrategy
+import com.chow.pomegranate.ui.screen.notice.NoticeDetailRoute
 import com.chow.pomegranate.ui.screen.notice.NoticeRoute
+import com.chow.pomegranate.ui.screen.notice.noticeDetailEntry
 import com.chow.pomegranate.ui.screen.notice.noticeEntry
-import com.chow.pomegranate.ui.screen.otp.OtpRoute
-import com.chow.pomegranate.ui.screen.otp.otpEntry
 import com.chow.pomegranate.ui.screen.otp.OtpDeleteRoute
 import com.chow.pomegranate.ui.screen.otp.OtpEditorRoute
+import com.chow.pomegranate.ui.screen.otp.OtpRoute
 import com.chow.pomegranate.ui.screen.otp.OtpScanRoute
+import com.chow.pomegranate.ui.screen.otp.otpEntry
+import com.chow.pomegranate.ui.screen.settings.AppUpdateRoute
+import com.chow.pomegranate.ui.screen.settings.AppUpdateViewModel
+import com.chow.pomegranate.ui.screen.settings.ClassroomBuiltinRulesRoute
+import com.chow.pomegranate.ui.screen.settings.ClassroomRuleDeleteRoute
+import com.chow.pomegranate.ui.screen.settings.ClassroomRuleEditorRoute
+import com.chow.pomegranate.ui.screen.settings.ClassroomRulesRoute
+import com.chow.pomegranate.ui.screen.settings.LocalAppUpdateViewModel
 import com.chow.pomegranate.ui.screen.settings.SettingsRoute
+import com.chow.pomegranate.ui.screen.settings.VersionDetailsRoute
+import com.chow.pomegranate.ui.screen.settings.VersionHistoryRoute
+import com.chow.pomegranate.ui.screen.settings.WeekSettingRoute
 import com.chow.pomegranate.ui.screen.settings.settingsEntry
 import com.chow.pomegranate.ui.screen.transcript.TranscriptDetailRoute
 import com.chow.pomegranate.ui.screen.transcript.TranscriptOverviewRoute
-import com.chow.pomegranate.ui.navigation.DialogListDetailSceneStrategy
-import com.chow.pomegranate.ui.component.AdaptiveStudyDetailRoute
 import com.chow.pomegranate.ui.screen.transcript.TranscriptRoute
 import com.chow.pomegranate.ui.screen.transcript.transcriptEntry
 import com.chow.pomegranate.ui.screen.websites.WebsitesRoute
 import com.chow.pomegranate.ui.screen.websites.websitesEntry
 import com.chow.pomegranate.ui.theme.PomegranateExpressiveTheme
-import com.chow.pomegranate.session.SessionManager
-import com.chow.pomegranate.session.SessionState
-import org.jetbrains.compose.resources.stringResource
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.koinConfiguration
 import org.koin.plugin.module.dsl.modules
-import com.chow.pomegranate.ui.screen.notice.noticeDetailEntry
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
-import com.chow.pomegranate.ui.screen.notice.NoticeDetailRoute
 
 /** 序列化配置 */
 internal val savedStateConfiguration = SavedStateConfiguration {
@@ -149,6 +159,9 @@ internal val savedStateConfiguration = SavedStateConfiguration {
             subclass(AvatarActionsRoute::class)
             subclass(MainRoute::class)
             subclass(SettingsRoute::class)
+            subclass(AppUpdateRoute::class)
+            subclass(VersionHistoryRoute::class)
+            subclass(VersionDetailsRoute::class)
             subclass(WeekSettingRoute::class)
             subclass(ClassroomRulesRoute::class)
             subclass(ClassroomRuleEditorRoute::class)
@@ -223,6 +236,12 @@ fun App(
             val classrooms = remember(classroomRules) { ClassroomReplacements(classroomRules) }
             val courseNames = remember(classroomRules) { ClassroomReplacements(classroomRules, NameReplacementTarget.Course) }
             val demoEnabled by demoModeRepository.enabled.collectAsState()
+            val updateViewModel = koinViewModel<AppUpdateViewModel>()
+            val updateInstaller = rememberUpdateInstaller()
+            val isPreview = LocalInspectionMode.current
+            LaunchedEffect(isPreview, updateInstaller?.target) {
+                if (!isPreview) updateViewModel.checkAtStartup(updateInstaller?.target)
+            }
             val snackbarHostState = remember { SnackbarHostState() }
             val feedbackScope = rememberCoroutineScope()
             LaunchedEffect(Unit) { demoModeRepository.isEnabled() }
@@ -264,7 +283,7 @@ fun App(
 
             // 登录状态过期时回到登录页
             LaunchedEffect(sessionState, demoEnabled) {
-                if (demoEnabled != true && sessionState is SessionState.Expired && backStack.lastOrNull() != SettingsRoute &&
+                if (demoEnabled != true && sessionState is SessionState.Expired && SettingsRoute !in backStack &&
                     backStack.none { it is LoginRoute || it is SecondClassLoginRoute }) {
                     backStack.add(LoginRoute)
 
@@ -274,12 +293,22 @@ fun App(
                 }
             }
 
+            val startupPromptPending by updateViewModel.startupPromptPending
+                .collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
+            LaunchedEffect(startupPromptPending) {
+                if (startupPromptPending && updateViewModel.takeStartupPrompt() &&
+                    backStack.none { it is AppUpdateRoute }) {
+                    backStack.add(AppUpdateRoute(automatic = true))
+                }
+            }
+
             CompositionLocalProvider(
                 LocalAppCoroutineScope provides feedbackScope,
                 LocalBackStack provides backStack,
                 LocalSnackbarHostState provides snackbarHostState,
                 LocalClassroomReplacements provides classrooms,
                 LocalCourseNameReplacements provides courseNames,
+                LocalAppUpdateViewModel provides updateViewModel,
             ) {
                 // 根布局自己铺主题背景色：NavDisplay 转场时两侧场景可能都还没画上，
                 // 不铺的话会直接露出窗口背景（深色模式下就是那一闪的白）
@@ -308,7 +337,7 @@ fun App(
                             mainEntry()
                             meDialogEntries()
                             // 设置页
-                            settingsEntry()
+                            settingsEntry(updateInstaller)
                             // 登录页
                             loginEntry()
                             // OTP 页

@@ -30,4 +30,8 @@ object PreferenceKeys {
 
     /** 本机头像文件地址；这不是学校账户的远端头像。 */
     const val LOCAL_AVATAR_URI = "local_avatar_uri"
+
+    const val STARTUP_UPDATE_PROMPTS = "startup_update_prompts"
+    const val SKIPPED_UPDATE_VERSIONS = "skipped_update_versions"
+    const val DEFERRED_UPDATE = "deferred_update"
 }

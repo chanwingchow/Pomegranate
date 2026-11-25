@@ -50,6 +50,7 @@ dependencies:
   - $libs.sqlite.bundled
 
 dependencies@android:
+  - $libs.androidx.core.ktx
   - $libs.cryptography.jdk
   - $libs.compose.uiTooling: runtime-only
   - $libs.koin.android
