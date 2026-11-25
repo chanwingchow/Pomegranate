@@ -32,3 +32,12 @@ kotlin-js-store
 local.properties
 .idea/
 
+# Local app artifacts can remain in the checkout when switching branches.
+/androidApp/release/
+xcuserdata/
+hs_err_pid*.log
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+

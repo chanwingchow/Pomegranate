@@ -1,0 +1,61 @@
+name: Publish website
+
+on:
+  push:
+    branches: [website]
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Export the Kobweb site
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          config = Path("site/.kobweb/conf.yaml")
+          text = config.read_text()
+          base_path = json.dumps(os.environ["PAGES_BASE_PATH"])
+          config.write_text(text.replace("site:\n", f"site:\n  basePath: {base_path}\n", 1))
+          PY
+          export KOBWEB_EXPORT_BROWSER_PATH="$(command -v google-chrome)"
+          bash ./gradlew :site:kobwebExport -PkobwebReuseServer=false -PkobwebEnv=DEV \
+            -PkobwebRunLayout=FULLSTACK -PkobwebBuildTarget=RELEASE -PkobwebExportLayout=STATIC
+      - name: Upload the website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/.kobweb/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
